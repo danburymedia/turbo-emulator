@@ -332,6 +332,10 @@ pub fn arm64_translate_syscall(val: u32) -> Option<SyscallType> {
         ARM64_SYS_FSTAT => Some(SyscallType::Fstat),
         ARM64_SYS_CLOCK_GETTIME => Some(SyscallType::ClockGetTime),
         ARM64_SYS_READ => Some(SyscallType::Read),
+        ARM64_SYS_OPENAT => Some(SyscallType::Openat),
+        ARM64_SYS_FCHOWN => Some(SyscallType::Fchown),
+        ARM64_SYS_FCHMOD => Some(SyscallType::Fchmod),
+        ARM64_SYS_UTIMENSAT => Some(SyscallType::Utimensat),
         _ => None
     }
 }

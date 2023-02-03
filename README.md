@@ -7,7 +7,7 @@ Simply use "cargo build --release".
 
 ## Running
 
-There is one binary for all the supported architectures. To run an aarch64 or riscv binary, simply run "turbo --usermode-directory (<i>sysroot</i>) runuser (<i>executable name</i>)", where the "sysroot" is the guest architecture sysroot directory (needed for dynamically linked executables) and "executable name" is the directory path of the program you'd like to run.
+There is one binary for all the supported architectures. To run an aarch64 or riscv binary, simply run "turbo --usermode-directory <i>sysroot</i> runuser -- <i>executable name</i>", where the "sysroot" is the guest architecture sysroot directory (needed for dynamically linked executables) and "executable name" is the directory path of the program you'd like to run.
 
 Do not use "cargo run", it messes up the way arguments are processed. Instead, run it directly from the "target" directory.
 
