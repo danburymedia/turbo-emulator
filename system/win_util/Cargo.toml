@@ -1,0 +1,16 @@
+[package]
+name = "win_util"
+version = "0.1.0"
+authors = ["The Chromium OS Authors"]
+edition = "2021"
+
+[dependencies]
+anyhow = "*"
+winapi = { version = "*", features = ["everything", "std", "impl-default"] }
+libc = "*"
+once_cell = "1.7"
+windows = "0.10.0"
+
+[build-dependencies]
+windows = "0.10.0"
+

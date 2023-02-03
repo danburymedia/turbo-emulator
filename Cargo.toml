@@ -1,0 +1,25 @@
+[package]
+name = "turbo"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+base = { path = "./system/base" }
+emulation = { path = "./emulation" }
+argh = "0.1.9"
+argh_helpers = { path = "./misc/argh_helpers" }
+cfg-if = "1.0.0"
+log = { version = "0", features = ["release_max_level_debug"]}
+serde_keyvalue = { path = "misc/serde_keyvalue", features = ["argh_derive"] }
+anyhow = "*"
+remain = "*"
+thiserror = "1.0.20"
+serde = { version = "1", features = [ "derive" ] }
+serde_derive = "1.0"
+toml = "0.5.9"
+downcast-rs = "1.2.0"
+terminal_size = "0.1.17"
+libc = "*"
+uuid = { version = "0.8.2", features = ["v4", "serde"]}

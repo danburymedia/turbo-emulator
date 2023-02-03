@@ -1,0 +1,20 @@
+[package]
+name = "vm_memory"
+version = "0.1.0"
+authors = ["The Chromium OS Authors"]
+edition = "2021"
+include = ["src/**/*", "Cargo.toml"]
+
+[dependencies]
+cfg-if = "1.0.0"
+cros_async = { path = "../misc/cros_async" }
+data_model = { path = "../misc/data_model" }
+libc = "*"
+base = { path = "../system/base" }
+bitflags = "1"
+remain = "*"
+serde = { version = "1", features = [ "derive" ] }
+thiserror = "*"
+
+[features]
+udmabuf = []
