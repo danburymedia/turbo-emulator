@@ -125,31 +125,6 @@ impl Arm64Cpu {
         }
     }
     pub fn set_reg(&mut self, rd: usize, result: u64, is_stack: bool) {
-        if result == 0x7fffffe828 {
-            nofunc();
-           // println!("");
-        }
-        if result == 0x15a33 && (rd == 28) {
-            nofunc();
-
-        }
-        if result == 0x4a76c8000000 {
-            nofunc();
-
-        }
-        if result == 0x14a76c8000000 {
-            nofunc();
-        }
-        if result == 1 && (rd == 11) {
-            nofunc();
-        }
-        if result == 1 && (rd == 0) {
-            nofunc();
-
-        }
-        if result == 0x2d && (rd  == 8 || rd == 6) {
-            nofunc();
-        }
         if rd == 31 {
             if is_stack {
                 self.stack_reg = result
@@ -215,34 +190,9 @@ impl Arm64Cpu {
     pub fn exec_one_by_one(&mut self) {
         loop {
             // todo: special mrmaccessstire for instr
-            // println!("Instruction addr: 0x{:x}", self.pc);
-            if self.pc == 0x14a10 {
-                nofunc();
-
-                //  println!();
-            }
-            if self.pc == 0x1136c {
-                nofunc();
-               // println!();
-            }
-            if self.pc == 0x1134c {
-                nofunc();
-            }
-            if self.pc == 0x1072c {
-                nofunc();
-            }
-            if self.pc == 0x107c8 {
-                nofunc();
-            }
             let instr = self.read32(self.pc, MemAccessStr::std_loadstore()).unwrap();
             if !crate::armv8::decode::decodestep1::root_decode(self, instr) {
                 self.a64_illegal_instruction();
-            }
-            let ptr: *mut u8 = 0x7fffffe470 as *mut u8;
-            unsafe {
-                if *ptr == 0x45 {
-                    nofunc();
-                }
             }
             self.pc += 4;
 
