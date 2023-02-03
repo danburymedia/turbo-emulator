@@ -14,14 +14,20 @@ pub mod arm_common;
 pub const IS_LITTLE_ENDIAN: bool = true;
 #[cfg(target_endian = "big")]
 pub const IS_LITTLE_ENDIAN: bool = false;
-
+#[cfg(target_endian = "little")]
 pub fn host_guest_endian_mismatch(me: MemEndian) -> bool {
-    if me == MemEndian::Big && IS_LITTLE_ENDIAN {
-        true
-    } else if me == MemEndian::Little && !IS_LITTLE_ENDIAN {
+    if me == MemEndian::Big {
         true
     } else {
         false
+    }
+}
+#[cfg(target_endian = "big")]
+pub fn host_guest_endian_mismatch(me: MemEndian) -> bool {
+    if me == MemEndian::Big {
+        false
+    } else {
+        true
     }
 }
 #[derive(Debug, Copy, Clone, PartialEq)]
