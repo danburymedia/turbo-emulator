@@ -14,7 +14,7 @@ use sync::Mutex;
 use crate::common::{host_guest_endian_mismatch, IS_LITTLE_ENDIAN};
 use crate::common::memory::MemEndian;
 use crate::linux_usermode::defs::{GenericStat, plat2generic_stat};
-use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask};
+use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask, SINFO, u_sigaction};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SyscallType {
@@ -1273,6 +1273,11 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
         }
         SyscallType::Sigaction  => {
             // nop for now
+            /*SINFO.with(|z| {
+                let mut k = z.borrow_mut();
+                u_sigaction(cpu, sysin, &mut k)
+            })
+             */
             SyscallOut::default()
         }
         SyscallType::ClockSetTime => {
@@ -1354,5 +1359,5 @@ pub trait UsermodeCpu {
     fn set_old_sigaction(&mut self, addr: u64, se: SigEntry);
     fn set_altstack(&mut self, addr: u64, si: &SigInfo);
     fn get_altstack(&mut self, addr: u64) -> GenericStackt;
-
+    fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo);
 }

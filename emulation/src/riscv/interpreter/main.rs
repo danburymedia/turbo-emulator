@@ -5,9 +5,9 @@ use sync::Mutex;
 use vm_memory::GuestMemory;
 use crate::common::memory::{flat_mem, MemEndian};
 use crate::elf::UserModeRuntime;
-use crate::linux_usermode::defs::GenericStat;
+use crate::linux_usermode::defs::{GenericStat, read32_advance_ptr, read64_advance_ptr};
 use crate::linux_usermode::main::{dispatch, SyscallIn, UsermodeCpu};
-use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask};
+use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, get_generic_sigaction_64, SigEntry, SigInfo, Sigmask, SIGNAL_AVAIL, SINFO};
 use crate::riscv::common::{Exception, get_privilege_encoding, get_trap_cause, Priv, RISCV_STACKPOINTER_REG, RiscvArgs, Trap, Xlen, xlen2bits, xlen2misa};
 use crate::riscv::common::Exception::{EnvironmentCallFromMMode, EnvironmentCallFromUMode};
 use crate::riscv::decoder;
@@ -15,7 +15,9 @@ use crate::riscv::interpreter::consts::*;
 use crate::riscv::mem::{get_read_access_type, MemAccessCircumstances, MemAccessType, RISCV_PAGE_OFFSET, RISCV_PAGE_SHIFT, RISCV_PAGE_SIZE, RiscVMem};
 //use crate::riscv::vector::vect_state;
 use crate::riscv::interpreter::core::illegal_instr;
+use crate::riscv::interpreter::defs::or;
 use crate::riscv::ume::defs::{riscv_translate_syscall, write_riscv_stat, write_riscv_sysinfo};
+use crate::riscv::ume::signals::setup_rt_frame;
 // use crate::riscv::vector::VectState;
 
 #[derive(Clone)]
@@ -140,7 +142,7 @@ impl RiscvInt {
     }
 
     pub fn get_csr_raw(&self, idx: usize) -> u64 {
-        unimplemented!()
+        self.csr[idx]
     }
     pub fn set_csr_raw(&mut self, idx: usize, val: u64) {
         unimplemented!()
@@ -483,6 +485,18 @@ impl RiscvInt {
                 }
 
             }
+            SIGNAL_AVAIL.with(|z| {
+                let mut zz = z.borrow_mut();
+                if *zz == true {
+                    // signal
+                    SINFO.with(|a| {
+                        let mut aa = a.borrow_mut();
+                        let signum = aa.use_idx.unwrap();
+                        setup_rt_frame(self, signum as i32, &mut aa);
+                    });
+                    *zz = false; // we will unblock signals later
+                }
+            });
             if let Some(f) = self.want_pc {
                 // todo: any checks?
                 self.pc = f;
@@ -549,7 +563,7 @@ impl UsermodeCpu for RiscvInt {
     }
 
     fn get_sigaction(&mut self, addr: u64) -> GenericSigactionArg {
-        todo!()
+        get_generic_sigaction_64(addr, MemEndian::Little, 0x04000000)
     }
 
     fn get_mask(&mut self, addr: u64) -> Sigmask {
@@ -567,6 +581,10 @@ impl UsermodeCpu for RiscvInt {
     }
 
     fn get_altstack(&mut self, addr: u64) -> GenericStackt {
+        todo!()
+    }
+
+    fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo) {
         todo!()
     }
 }

@@ -55,7 +55,7 @@ pub fn init_riscv_runtime(ef: &Elf) -> UserModeRuntime {
         sig_tramp: 0,
         memstate: Arc::new(Mutex::new(memstate)),
         is_64: is64,
-        sigcnst: Arc::new(Mutex::new(SigConstants::default())),
+        sigcnst: Arc::new(Mutex::new(riscv64_init_sigconstant())),
         search_path: Default::default(),
         str_path: "".to_string(),
         tls_base: 0
@@ -132,7 +132,7 @@ pub fn init_stack(ri: &mut RiscvInt, ef: &Elf) {
     let mut envPtrs: Vec<u64> = Vec::new();
     for i in &envpclone {
         let pval = CString::new(i.clone().as_bytes()).unwrap().into_bytes_with_nul();
-        info!("going to write env val value {} to addr 0x{:x}", i, ri.get_stack_reg() - (pval.len() as u64));
+        debug!("going to write env val value {} to addr 0x{:x}", i, ri.get_stack_reg() - (pval.len() as u64));
         push_stack(ri, &pval);
         envPtrs.push(ri.get_stack_reg())
     }
@@ -140,25 +140,25 @@ pub fn init_stack(ri: &mut RiscvInt, ef: &Elf) {
     let mut argPtrs: Vec<u64> = Vec::new();
     for i in &argclone {
         let pval = CString::new(i.clone().as_bytes()).unwrap().into_bytes_with_nul();
-        info!("going to write arg val value {} to addr 0x{:x}", i, ri.get_stack_reg() - (pval.len() as u64));
+        debug!("going to write arg val value {} to addr 0x{:x}", i, ri.get_stack_reg() - (pval.len() as u64));
         push_stack(ri,  &pval);
         argPtrs.push(ri.get_stack_reg())
     }
     argPtrs.push(0);
     ri.regs[RISCV_STACKPOINTER_REG] &= !15;
     for i in auxv.into_iter().rev() {
-        info!("going to write aux value {} to addr 0x{:x}", i.value, ri.get_stack_reg() - subval);
+        debug!("going to write aux value {} to addr 0x{:x}", i.value, ri.get_stack_reg() - subval);
         push_stack_val(ri, i.value as u64);
-        info!("going to write aux key {:?} to addr 0x{:x}", i.typ, ri.get_stack_reg() - subval);
+        debug!("going to write aux key {:?} to addr 0x{:x}", i.typ, ri.get_stack_reg() - subval);
         push_stack_val(ri,  i.typ as u64);
     }
     for i in envPtrs.into_iter().rev() {
-        info!("going to write envp ptr 0x{:x} to addr 0x{:x}", i, ri.get_stack_reg() - subval);
+        debug!("going to write envp ptr 0x{:x} to addr 0x{:x}", i, ri.get_stack_reg() - subval);
         push_stack_val(ri,  i as u64);
     }
     for i in argPtrs.into_iter().rev() {
         // the last valuee should be higher on stack
-        info!("going to write arg ptr 0x{:x} to addr 0x{:x}", i, ri.get_stack_reg() - subval);
+        debug!("going to write arg ptr 0x{:x} to addr 0x{:x}", i, ri.get_stack_reg() - subval);
         push_stack_val(ri,  i as u64);
     }
     let argc = ri.user_struct.initvars.lock().args.len() as u64;

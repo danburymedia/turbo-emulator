@@ -5,11 +5,17 @@ use std::ptr::null_mut;
 use std::sync::{Arc, Mutex};
 use base::block_signal;
 use base::platform::kill;
-use libc::{c_int, sigaddset, SIGHUP, SIGCHLD, SIGINT, sigset_t, SIGTERM, SIGALRM, SIGPIPE, SIGKILL, SIGSEGV, stat, SIGFPE, SIGABRT, SIGQUIT, SIGILL, sigaction, SA_NOCLDSTOP, sigfillset, pthread_sigmask, SIG_SETMASK, siginfo_t, SS_DISABLE, SS_ONSTACK, SIGRTMAX, SIGBUS, SA_SIGINFO, sighandler_t, SA_RESTART, SIGWINCH, SIGURG, SIGCONT, SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIG_IGN, c_void, SIG_DFL, sigsuspend, EPERM, ENOMEM, EINVAL, CLD_EXITED, getpid, SIG_ERR, SA_NODEFER, sigismember, SA_ONSTACK, SIG_BLOCK, SIG_UNBLOCK, SA_RESETHAND, SA_NOCLDWAIT};
+use libc::{c_int, sigaddset, SIGHUP, SIGCHLD, SIGINT, sigset_t, SIGTERM, SIGALRM, SIGPIPE,
+           SIGKILL, SIGSEGV, stat, SIGFPE, SIGABRT, SIGQUIT, SIGILL, sigaction, SA_NOCLDSTOP,
+           sigfillset, pthread_sigmask, SIG_SETMASK, siginfo_t, SS_DISABLE, SS_ONSTACK, SIGRTMAX,
+           SIGBUS, SA_SIGINFO, sighandler_t, SA_RESTART, SIGWINCH, SIGURG, SIGCONT, SIGSTOP,
+           SIGTSTP, SIGTTIN, SIGTTOU, SIG_IGN, c_void, SIG_DFL, sigsuspend, EPERM, ENOMEM, EINVAL,
+           CLD_EXITED, getpid, SIG_ERR, SA_NODEFER, sigismember, SA_ONSTACK, SIG_BLOCK, SIG_UNBLOCK,
+           SA_RESETHAND, SA_NOCLDWAIT};
 use num::Integer;
 use crate::common::memory::{flat_mem, MemEndian};
-use crate::elf::UserModeRuntime;
-use crate::linux_usermode::defs::{SIG_FIRST_INVALID, SigConstants};
+use crate::elf::{MachineType, UserModeRuntime};
+use crate::linux_usermode::defs::{read32_advance_ptr, read64_advance_ptr, SIG_FIRST_INVALID, SigConstants};
 use crate::linux_usermode::main::{generic_error_handle, SyscallIn, SyscallOut, UsermodeCpu};
 
 #[derive(Copy, Clone)]
@@ -21,18 +27,30 @@ pub struct SigEntry {
     pub flags: u64, // of guest, we can cvt to host if needed.
     pub sa_restorer: Option<u64>,
 }
-
+impl Default for SigEntry {
+    fn default() -> Self {
+        SigEntry {
+            handler_func: 0,
+            is_valid: false,
+            maskguest: Default::default(),
+            flags: 0,
+            sa_restorer: None
+        }
+    }
+}
 pub struct SigInfo {
-    pub old_mask: sigset_t,
+    pub old_masks: Vec<sigset_t>,
     pub entry: [SigEntry; 64], // by guest
     pub use_idx: Option<usize>,
-    pub use_sig: SiginfoWrapper,
+    pub use_sig: Option<SiginfoWrapper>,
     pub ss_sp: u64,
     pub ss_size: u64,
     pub is_32: bool,
     pub cnsts: SigConstants,
     pub current_ss: Sigmask,
-    pub sigsuspend_ss: Option<sigset_t>
+    pub sigsuspend_ss: Option<sigset_t>,
+    pub mtype: MachineType,
+    pub mdata: Vec<u8>, // sometimes, we need to recreate cpu (for
 
 }
 
@@ -66,8 +84,21 @@ pub fn target_sigsp(sp: u64, sig_idx: usize, si: &SigInfo) -> u64 {
 }
 impl SigInfo {
     pub fn new() -> SigInfo {
-        let mut ss: sigset_t;
-        panic!();
+        SigInfo {
+            old_masks: Vec::new(),
+            entry: [Default::default(); 64],
+            use_idx: None,
+            use_sig: None,
+            ss_sp: 0,
+            ss_size: 0,
+            is_32: false,
+            cnsts: Default::default(),
+            current_ss: Default::default(),
+            sigsuspend_ss: None,
+            mtype: MachineType::None,
+            mdata: vec![]
+        }
+
     }
 }
 use std::cell::{RefCell};
@@ -79,9 +110,10 @@ use crate::common::{IS_LITTLE_ENDIAN, place_variable_guest_fmt_64};
 /* lazy_static! {
     static ref SINFO: Mutex<SigInfo> = Mutex::new(SigInfo::new());
 } */
+//pub static SIGNAL_AVAIL: bool = false;
 thread_local! {
-    static SINFO: RefCell<SigInfo> = RefCell::new(SigInfo::new());
-    static CHECK_SIG: RefCell<bool> = RefCell::new(false);
+    pub static SINFO: RefCell<SigInfo> = RefCell::new(SigInfo::new());
+    pub static SIGNAL_AVAIL: RefCell<bool> = RefCell::new(false);
   //  static SINFO: Mutex<SigInfo> = Mutex::new(SigInfo::new());
 }
 // static mut SINFO: Arc<Option<Mutex<SigInfo>>> = Arc::new(None);
@@ -210,7 +242,7 @@ pub fn block_all_signals() -> sigset_t {
     old_sigset
 
 }
-pub fn restore_orig_blocked_sigs(s: sigset_t) {
+pub fn set_mask_block(s: sigset_t) {
     unsafe {
         let ret = pthread_sigmask(SIG_SETMASK, &s, null_mut());
         if ret < 0 {
@@ -226,7 +258,8 @@ pub unsafe extern "C" fn generic_handler(sig: c_int, siginfo: *mut siginfo_t, uc
     // sunwrapped.with_borrow()
     SINFO.with(|z| {
         let mut val = z.borrow_mut();
-
+        val.old_masks.push(block_all_signals()); // we block until we start (or stop) sighandler
+        // push so we can handle nested sigs if needed
         let guestsig = val.cnsts.host_to_guest_sigs[sig as usize];
         // To handle sync symbols (SIGSEIV, SIGBUS) we need to either make use
         // of siglongjmp (undefined on rust) or fiddle with the program counter
@@ -234,13 +267,19 @@ pub unsafe extern "C" fn generic_handler(sig: c_int, siginfo: *mut siginfo_t, uc
         if sig == SIGSEGV || sig == SIGBUS {
             panic!();
         }
-        let gensinfo = cvt_host_to_guest_siginfo(&val.cnsts, *siginfo.clone(), val.is_32);
+        let gensinfo = cvt_host_to_guest_siginfo(&val.cnsts,
+                                                 *siginfo.clone(), val.is_32);
         // val.old_mask = sseg;
         if val.use_idx.is_some() {
             panic!(); // we block signals, how possible?
         }
-        val.use_idx = Some(sig as usize);
-        val.use_sig = gensinfo;
+        val.use_sig = Some(gensinfo);
+        val.use_idx = Some(guestsig as usize);
+        SIGNAL_AVAIL.with(|z| {
+            let mut val = z.borrow_mut();
+            *val = true;
+        });
+
     });
     //sunwrapped.unwrap().entry
     //let mut val = unsafe { sunwrapped.with() };
@@ -307,7 +346,7 @@ fn cvt_host_to_guest_siginfo(cnsts: &SigConstants, host_siginfo: siginfo_t, is_3
     unsafe {
         if host_siginfo.si_code == SI_USER || host_siginfo.si_code == SI_TKILL {
             // sig sent on purpose by kill
-            stype = SigType::UserKill;
+            stype = SigType::UserKill; // or use top 16 bits of code
             gen.aux.kill.pid = host_siginfo.si_pid();
             gen.aux.kill.uid = host_siginfo.si_uid() as i32; // both 32 bit
         } else {
@@ -369,6 +408,32 @@ pub fn fill_generic_stackt(sp: u64, si: &SigInfo) -> GenericStackt {
     }
 }
 pub fn inject_signal<T: UsermodeCpu>(cpu: &mut T, sig: i32, si: &mut SigInfo) {
+    if sig == 0 {
+        panic!();
+    }
+    let ent = si.entry[sig as usize];
+    let realsig = si.cnsts.guest_to_host_sigs[sig as usize];
+    if ent.handler_func == SIG_DFL as u64 {
+        panic!();
+    } else if ent.handler_func == SIG_ERR as u64 { // todo: check if need extend for 32 bit
+        panic!();
+    } else {
+        /* let mut initalmask = ent.maskguest.guest_to_host_sigbits(si.cnsts.clone());
+        let deferbit = si.cnsts.host_to_guest_flags.get(&SA_NODEFER).unwrap();
+        if (ent.flags & (*deferbit as u64)) == 0 {
+            unsafe {
+                sigaddset(&mut initalmask, realsig);
+            }
+        }
+        set_mask_block(initalmask);
+        do this right as we run signal handler
+         */
+        cpu.rt_frame_setup(sig, si);
+        // todo: block sigs here or in setup_rt_stack?
+
+
+
+    }
     /*
     if sig == 0 {
         return;
@@ -442,11 +507,12 @@ pub fn generic_sigaction_write_64(addr: u64, end: MemEndian, se: SigEntry) {
 
 }
 pub fn u_sigaction<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn,
-                                   umr: &mut UserModeRuntime, si: &mut SigInfo) -> SyscallOut {
+                                    si: &mut SigInfo) -> SyscallOut {
     let signum = sysin.args[0];
     let newact = sysin.args[1];
     let oldact = sysin.args[2];
     let mut sout: SyscallOut = Default::default();
+    si.cnsts = cpu.get_ume().sigcnst.lock().clone(); // todo: better place to do this
     let sseg = block_all_signals();
     if oldact != 0 {
         cpu.set_old_sigaction(oldact, si.entry[signum as usize]);
@@ -456,16 +522,17 @@ pub fn u_sigaction<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn,
         if host_sig > SIGRTMAX() {
             sout.ret1 = 0;
             generic_error_handle(&mut sout, -EINVAL);
-            restore_orig_blocked_sigs(sseg);
+            set_mask_block(sseg);
             return sout;
         }
-        let args = cpu.get_sigaction(newact);
+        let args = cpu.get_sigaction(newact); // same on everywhere?
         if host_sig != SIGSEGV && host_sig != SIGBUS {
             let mut hostact: sigaction = unsafe { mem::zeroed() };
             // always use extended handler.
             // Linux puts args in backend anyway regardless of flag
             hostact.sa_flags |= SA_SIGINFO;
             hostact.sa_sigaction = generic_handler as sighandler_t;
+
             if si.cnsts.check_host_flag_set(args.flags, SA_RESTART) {
                 hostact.sa_flags |= SA_RESTART;
             }
@@ -504,9 +571,11 @@ pub fn u_sigaction<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn,
             };
 
             generic_error_handle(&mut sout, ret);
+        } else {
+            panic!();
         }
     }
-    restore_orig_blocked_sigs(sseg);
+    set_mask_block(sseg);
     sout
 }
 pub fn u_sigaltstack<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
@@ -525,7 +594,7 @@ pub fn u_sigaltstack<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn, umr: &mut Us
             if on_sig_stack(sp, &val) {
                 sout.is_error = true;
                 sout.ret1 = -EPERM as i32 as i64 as u64;
-                restore_orig_blocked_sigs(sseg);
+                set_mask_block(sseg);
                 return sout;
             }
             match gs.ss_flags {
@@ -548,7 +617,7 @@ pub fn u_sigaltstack<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn, umr: &mut Us
                 }
             }
         }
-        restore_orig_blocked_sigs(sseg);
+        set_mask_block(sseg);
         sout
     })
     // let mut val = unsafe { sunwrapped.unwrap() };
@@ -601,6 +670,32 @@ pub fn u_rt_sigprocmask(sysin: SyscallIn, ume: &mut UserModeRuntime, sig: &mut S
     let mut sout: SyscallOut = Default::default();
     sout
 
+
+}
+pub fn get_generic_sigaction_64(addr: u64, end: MemEndian, rflag: u64) -> GenericSigactionArg {
+    let mut realaddr = addr;
+    let handler = read64_advance_ptr(&mut realaddr, end);
+    let flags = read64_advance_ptr(&mut realaddr, end);
+    let ores: Option<u64> = if (flags & rflag) != 0 {
+        let v = read64_advance_ptr(&mut realaddr, end);
+        Some(v)
+    } else {
+        None
+    };
+    let mask0 = read32_advance_ptr(&mut realaddr, end);
+    let mask1 = read32_advance_ptr(&mut realaddr, end);
+    let mut sigm = Sigmask {
+        vals: [0; 32],
+        real_size: 4
+    };
+    sigm.vals[0] = mask0 as u64;
+    sigm.vals[1] = mask1 as u64;
+    GenericSigactionArg {
+        handler,
+        mask: sigm,
+        flags,
+        restorer: ores
+    }
 
 }
 // for restart, save cpu state befire int. syscall, then execute coode in handler, then returb. flush jit too

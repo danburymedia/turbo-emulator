@@ -141,14 +141,18 @@ impl SigConstants {
     }
 }
 pub fn snyth_sigconst(h2gs: Vec<i32>, h2gf: HashMap<i32, i32>) -> SigConstants {
+    let mut guest_to_host_sigs: Vec<i32> = vec![0; 64];
+    for (i, v) in h2gs.iter().enumerate() {
+        guest_to_host_sigs[*v as usize] = i as i32;
+    }
     let mut ret = SigConstants {
         min_sig_stack: 0,
-        guest_to_host_sigs: vec![],
+        guest_to_host_sigs,
         host_to_guest_sigs: h2gs,
         guest_to_host_flags: Default::default(),
         host_to_guest_flags: h2gf,
     };
-    panic!();
+    // panic!();
     ret
 }
 pub fn write_sysinfo_generic64(addr: u64, end: MemEndian, si: sysinfo) {

@@ -40,9 +40,15 @@ pub fn fp_data_processing_3(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let opa_neg = o1 == 1;
     let op1_neg = o0 != o1;
     let (res, state) = match fpsize {
-        FloatMode::Half => fp_muladd::<u16, F16Traits>(a as u16, op1 as u16, op2 as u16, opa_neg, op1_neg, false, rm),
-        FloatMode::Single => fp_muladd::<u32, F32Traits>(a as u32, op1 as u32, op2 as u32, opa_neg, op1_neg, false, rm),
-        FloatMode::Double => fp_muladd::<u64, F64Traits>(a as u64, op1 as u64, op2 as u64, opa_neg, op1_neg, false, rm),
+        FloatMode::Half => fp_muladd::<u16, F16Traits>(a as u16, op1 as u16,
+                                                       op2 as u16, opa_neg, op1_neg,
+                                                       false, rm),
+        FloatMode::Single => fp_muladd::<u32, F32Traits>(a as u32, op1 as u32,
+                                                         op2 as u32, opa_neg, op1_neg,
+                                                         false, rm),
+        FloatMode::Double => fp_muladd::<u64, F64Traits>(a as u64, op1 as u64,
+                                                         op2 as u64, opa_neg, op1_neg,
+                                                         false, rm),
     };
     if handle_fpstate(ai, state) {
         return;

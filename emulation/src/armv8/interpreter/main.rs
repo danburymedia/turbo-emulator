@@ -252,4 +252,8 @@ impl UsermodeCpu for Arm64Cpu {
     fn get_altstack(&mut self, addr: u64) -> GenericStackt {
         todo!()
     }
+
+    fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo) {
+        todo!()
+    }
 }
