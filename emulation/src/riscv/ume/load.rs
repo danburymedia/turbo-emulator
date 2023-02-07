@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Arc;
 use base::platform::MemoryMapping;
-use base::{debug, info, MappedRegion, Protection};
+use base::{debug, info, MappedRegion, pagesize, Protection};
 use goblin::elf::Elf;
 use sync::Mutex;
 use crate::common::genfunc::{round_down, round_up};
@@ -19,15 +19,28 @@ pub fn init_riscv_runtime(ef: &Elf) -> UserModeRuntime {
     let (stackbase, mmap_end) = if is64 {
         (0x8000000000 as u64, 0x40000000 as u64)
     } else {
+        unimplemented!();
         (0x7FFFFFFF as u64, 0x40000000 as u64)
     };
+    let sigaddr: u64 = 0x8000001000;
+    let riscvsig = MemoryMapping::new_protection_fixed(
+        sigaddr as *mut u8
+        ,  pagesize() as usize
+        , Protection::read_write_execute(),
+        false).unwrap();
+    let mut waddr: *mut u32 = sigaddr as *mut u32;
+    unsafe {
+        *waddr = 0x08b00893; // li a7, 139
+        *(waddr.add(1)) = 0x73; // ecall
+    }
     let max_stack_size: u64 = 1024 * 1024 * 8;
+
     let memstate = MemState {
         stack_size: max_stack_size,
         brk: 0,
         orig_brk: 0,
         brk_max: 0,
-        mem_maps: vec![],
+        mem_maps: vec![riscvsig],
         mmap_region: None,
         stack_base: stackbase,
         next_thread_stack_base: stackbase - max_stack_size,
@@ -52,7 +65,7 @@ pub fn init_riscv_runtime(ef: &Elf) -> UserModeRuntime {
         machine_type: MachineType::Riscv,
         is_little_endian: true,
         heap_grow_down: false,
-        sig_tramp: 0,
+        sig_tramp: sigaddr,
         memstate: Arc::new(Mutex::new(memstate)),
         is_64: is64,
         sigcnst: Arc::new(Mutex::new(riscv64_init_sigconstant())),
@@ -115,6 +128,10 @@ pub fn init_stack(ri: &mut RiscvInt, ef: &Elf) {
     let elfbase = iv.objects[objidx].mem.as_ptr() as u64;
     let logbase = iv.objects[objidx].base as u64;
     auxv.push(Auxv { typ: AuxType::Phdr, value: elfbase + ef.header.e_phoff});
+    if iv.intrp_idx.is_some() {
+        // we know we always load interp at 0x40000000. todo if we change that, we need to reflect it
+        auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
+    }
     // auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
     // auxv.push(Auxv { typ: AuxType::Phdr, value: logbase + 0x10000 + ef.header.e_phoff}); 0x40000000
     auxv.push(Auxv { typ: AuxType::Entry, value: iv.objects[objidx].entry_point});

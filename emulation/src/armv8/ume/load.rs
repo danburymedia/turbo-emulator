@@ -103,6 +103,10 @@ pub fn init_stack(ri: &mut Arm64Cpu, ef: &Elf) {
     let elfbase = iv.objects[objidx].mem.as_ptr() as u64;
     let logbase = iv.objects[objidx].base as u64;
     auxv.push(Auxv { typ: AuxType::Phdr, value: elfbase + ef.header.e_phoff});
+    if iv.intrp_idx.is_some() {
+        // we know we always load interp at 0x40000000. todo if we change that, we need to reflect it
+        auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
+    }
     // auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
     // auxv.push(Auxv { typ: AuxType::Phdr, value: logbase + 0x10000 + ef.header.e_phoff}); 0x40000000
     auxv.push(Auxv { typ: AuxType::Entry, value: iv.objects[objidx].entry_point});

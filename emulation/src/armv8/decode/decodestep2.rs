@@ -198,18 +198,361 @@ pub fn decode_branch_reg<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool 
     return false;
 }
 pub fn decode_asisdlse<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
+    let args: ArmInstr = ArmInstr {
+        insn
+    };
+    let l = ((insn >> 22) & 1) != 0;
+    let opcode = ((insn >> 12) & 15);
+    if(!l && (opcode == 0)) { return trans.st4_advsimd_mult(args); } // -> st4_asisdlse_r4
+    if(!l && opcode==2) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlse_r4_4v
+    if(!l && opcode==4) { return trans.st3_advsimd_mult(args); } // -> st3_asisdlse_r3
+    if(!l && opcode==6) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlse_r3_3v
+    if(!l && opcode==7) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlse_r1_1v
+    if(!l && opcode==8) { return trans.st2_advsimd_mult(args); } // -> st2_asisdlse_r2
+    if(!l && opcode==10) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlse_r2_2v
+    if(l && (opcode == 0)) { return trans.ld4_advsimd_mult(args); } // -> ld4_asisdlse_r4
+    if(l && opcode==2) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlse_r4_4v
+    if(l && opcode==4) { return trans.ld3_advsimd_mult(args); } // -> ld3_asisdlse_r3
+    if(l && opcode==6) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlse_r3_3v
+    if(l && opcode==7) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlse_r1_1v
+    if(l && opcode==8) { return trans.ld2_advsimd_mult(args); } // -> ld2_asisdlse_r2
+    if(l && opcode==10) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlse_r2_2v
+
     return false;
 }
 pub fn decode_asisdlsep<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
+    let args: ArmInstr = ArmInstr {
+        insn
+    };
+    let l = ((insn >> 22) & 1) != 0;
+    let opcode = ((insn >> 12) & 15);
+    let rm = ((insn >> 16) & 0x1f);
+    if(!l && rm!=0x1f && (opcode == 0)) { return trans.st4_advsimd_mult(args); } // -> st4_asisdlsep_r4_r
+    if(!l && rm!=0x1f && opcode==2) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_r4_r4
+    if(!l && rm!=0x1f && opcode==4) { return trans.st3_advsimd_mult(args); } // -> st3_asisdlsep_r3_r
+    if(!l && rm!=0x1f && opcode==6) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_r3_r3
+    if(!l && rm!=0x1f && opcode==7) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_r1_r1
+    if(!l && rm!=0x1f && opcode==8) { return trans.st2_advsimd_mult(args); } // -> st2_asisdlsep_r2_r
+    if(!l && rm!=0x1f && opcode==10) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_r2_r2
+    if(!l && rm==0x1f && (opcode == 0)) { return trans.st4_advsimd_mult(args); } // -> st4_asisdlsep_i4_i
+    if(!l && rm==0x1f && opcode==2) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_i4_i4
+    if(!l && rm==0x1f && opcode==4) { return trans.st3_advsimd_mult(args); } // -> st3_asisdlsep_i3_i
+    if(!l && rm==0x1f && opcode==6) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_i3_i3
+    if(!l && rm==0x1f && opcode==7) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_i1_i1
+    if(!l && rm==0x1f && opcode==8) { return trans.st2_advsimd_mult(args); } // -> st2_asisdlsep_i2_i
+    if(!l && rm==0x1f && opcode==10) { return trans.st1_advsimd_mult(args); } // -> st1_asisdlsep_i2_i2
+    if(l && rm!=0x1f && (opcode == 0)) { return trans.ld4_advsimd_mult(args); } // -> ld4_asisdlsep_r4_r
+    if(l && rm!=0x1f && opcode==2) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_r4_r4
+    if(l && rm!=0x1f && opcode==4) { return trans.ld3_advsimd_mult(args); } // -> ld3_asisdlsep_r3_r
+    if(l && rm!=0x1f && opcode==6) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_r3_r3
+    if(l && rm!=0x1f && opcode==7) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_r1_r1
+    if(l && rm!=0x1f && opcode==8) { return trans.ld2_advsimd_mult(args); } // -> ld2_asisdlsep_r2_r
+    if(l && rm!=0x1f && opcode==10) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_r2_r2
+    if(l && rm==0x1f && (opcode == 0)) { return trans.ld4_advsimd_mult(args); } // -> ld4_asisdlsep_i4_i
+    if(l && rm==0x1f && opcode==2) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_i4_i4
+    if(l && rm==0x1f && opcode==4) { return trans.ld3_advsimd_mult(args); } // -> ld3_asisdlsep_i3_i
+    if(l && rm==0x1f && opcode==6) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_i3_i3
+    if(l && rm==0x1f && opcode==7) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_i1_i1
+    if(l && rm==0x1f && opcode==8) { return trans.ld2_advsimd_mult(args); } // -> ld2_asisdlsep_i2_i
+    if(l && rm==0x1f && opcode==10) { return trans.ld1_advsimd_mult(args); } // -> ld1_asisdlsep_i2_i2
     return false;
 }
 pub fn decode_asisdlso<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
+    let args: ArmInstr = ArmInstr {
+        insn
+    };
+    let l = ((insn >> 22) & 1) != 0;
+    let r = ((insn >> 21) & 1) != 0;
+    let s = ((insn >> 12) & 1) != 0;
+    let size = ((insn >> 10) & 3);
+    let opcode = ((insn >> 13) & 7);
+    if(!l && !r && opcode==4 && !s && size==1) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlso_d1_1d
+    if(!l && !r && opcode==5 && !s && size==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlso_d3_3d
+    if(!l && r && opcode==4 && !s && size==1) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlso_d2_2d
+    if(!l && r && opcode==5 && !s && size==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlso_d4_4d
+    if(l && !r && opcode==4 && !s && size==1) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlso_d1_1d
+    if(l && !r && opcode==5 && !s && size==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlso_d3_3d
+    if(l && r && opcode==4 && !s && size==1) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlso_d2_2d
+    if(l && r && opcode==5 && !s && size==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlso_d4_4d
+    if(!l && !r && opcode==4 && (size == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlso_s1_1s
+    if(!l && !r && opcode==5 && (size == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlso_s3_3s
+    if(!l && r && opcode==4 && (size == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlso_s2_2s
+    if(!l && r && opcode==5 && (size == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlso_s4_4s
+    if(l && !r && opcode==4 && (size == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlso_s1_1s
+    if(l && !r && opcode==5 && (size == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlso_s3_3s
+    if(l && r && opcode==4 && (size == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlso_s2_2s
+    if(l && r && opcode==5 && (size == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlso_s4_4s
+    if(!l && !r && opcode==2 && ((size&1) == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlso_h1_1h
+    if(!l && !r && opcode==3 && ((size&1) == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlso_h3_3h
+    if(!l && r && opcode==2 && ((size&1) == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlso_h2_2h
+    if(!l && r && opcode==3 && ((size&1) == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlso_h4_4h
+    if(l && !r && opcode==2 && ((size&1) == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlso_h1_1h
+    if(l && !r && opcode==3 && ((size&1) == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlso_h3_3h
+    if(l && !r && opcode==6 && !s) { return trans.ld1r_advsimd(args); } // -> ld1r_asisdlso_r1
+    if(l && !r && opcode==7 && !s) { return trans.ld3r_advsimd(args); } // -> ld3r_asisdlso_r3
+    if(l && r && opcode==2 && ((size&1) == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlso_h2_2h
+    if(l && r && opcode==3 && ((size&1) == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlso_h4_4h
+    if(l && r && opcode==6 && !s) { return trans.ld2r_advsimd(args); } // -> ld2r_asisdlso_r2
+    if(l && r && opcode==7 && !s) { return trans.ld4r_advsimd(args); } // -> ld4r_asisdlso_r4
+    if(!l && !r && (opcode == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlso_b1_1b
+    if(!l && !r && opcode==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlso_b3_3b
+    if(!l && r && (opcode == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlso_b2_2b
+    if(!l && r && opcode==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlso_b4_4b
+    if(l && !r && (opcode == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlso_b1_1b
+    if(l && !r && opcode==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlso_b3_3b
+    if(l && r && (opcode == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlso_b2_2b
+    if(l && r && opcode==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlso_b4_4b
     return false;
 }
 pub fn decode_asisdlsop<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
+    let args: ArmInstr = ArmInstr {
+        insn
+    };
+    let l = ((insn >> 22) & 1) != 0;
+    let r = ((insn >> 21) & 1) != 0;
+    let s = ((insn >> 12) & 1) != 0;
+    let size = ((insn >> 10) & 3);
+    let opcode = ((insn >> 13) & 7);
+    let rm = ((insn >> 16) & 0x1f);
+    if(!l && !r && rm!=0x1f && opcode==4 && !s && size==1) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_dx1_r1d
+    if(!l && !r && rm!=0x1f && opcode==5 && !s && size==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_dx3_r3d
+    if(!l && !r && rm==0x1f && opcode==4 && !s && size==1) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_d1_i1d
+    if(!l && !r && rm==0x1f && opcode==5 && !s && size==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_d3_i3d
+    if(!l && r && rm!=0x1f && opcode==4 && !s && size==1) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_dx2_r2d
+    if(!l && r && rm!=0x1f && opcode==5 && !s && size==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_dx4_r4d
+    if(!l && r && rm==0x1f && opcode==4 && !s && size==1) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_d2_i2d
+    if(!l && r && rm==0x1f && opcode==5 && !s && size==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_d4_i4d
+    if(l && !r && rm!=0x1f && opcode==4 && !s && size==1) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_dx1_r1d
+    if(l && !r && rm!=0x1f && opcode==5 && !s && size==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_dx3_r3d
+    if(l && !r && rm==0x1f && opcode==4 && !s && size==1) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_d1_i1d
+    if(l && !r && rm==0x1f && opcode==5 && !s && size==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_d3_i3d
+    if(l && r && rm!=0x1f && opcode==4 && !s && size==1) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_dx2_r2d
+    if(l && r && rm!=0x1f && opcode==5 && !s && size==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_dx4_r4d
+    if(l && r && rm==0x1f && opcode==4 && !s && size==1) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_d2_i2d
+    if(l && r && rm==0x1f && opcode==5 && !s && size==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_d4_i4d
+    if(!l && !r && rm!=0x1f && opcode==4 && (size == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_sx1_r1s
+    if(!l && !r && rm!=0x1f && opcode==5 && (size == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_sx3_r3s
+    if(!l && !r && rm==0x1f && opcode==4 && (size == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_s1_i1s
+    if(!l && !r && rm==0x1f && opcode==5 && (size == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_s3_i3s
+    if(!l && r && rm!=0x1f && opcode==4 && (size == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_sx2_r2s
+    if(!l && r && rm!=0x1f && opcode==5 && (size == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_sx4_r4s
+    if(!l && r && rm==0x1f && opcode==4 && (size == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_s2_i2s
+    if(!l && r && rm==0x1f && opcode==5 && (size == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_s4_i4s
+    if(l && !r && rm!=0x1f && opcode==4 && (size == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_sx1_r1s
+    if(l && !r && rm!=0x1f && opcode==5 && (size == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_sx3_r3s
+    if(l && !r && rm==0x1f && opcode==4 && (size == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_s1_i1s
+    if(l && !r && rm==0x1f && opcode==5 && (size == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_s3_i3s
+    if(l && r && rm!=0x1f && opcode==4 && (size == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_sx2_r2s
+    if(l && r && rm!=0x1f && opcode==5 && (size == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_sx4_r4s
+    if(l && r && rm==0x1f && opcode==4 && (size == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_s2_i2s
+    if(l && r && rm==0x1f && opcode==5 && (size == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_s4_i4s
+    if(!l && !r && rm!=0x1f && opcode==2 && ((size&1) == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_hx1_r1h
+    if(!l && !r && rm!=0x1f && opcode==3 && ((size&1) == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_hx3_r3h
+    if(!l && !r && rm==0x1f && opcode==2 && ((size&1) == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_h1_i1h
+    if(!l && !r && rm==0x1f && opcode==3 && ((size&1) == 0)) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_h3_i3h
+    if(!l && r && rm!=0x1f && opcode==2 && ((size&1) == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_hx2_r2h
+    if(!l && r && rm!=0x1f && opcode==3 && ((size&1) == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_hx4_r4h
+    if(!l && r && rm==0x1f && opcode==2 && ((size&1) == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_h2_i2h
+    if(!l && r && rm==0x1f && opcode==3 && ((size&1) == 0)) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_h4_i4h
+    if(l && !r && rm!=0x1f && opcode==2 && ((size&1) == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_hx1_r1h
+    if(l && !r && rm!=0x1f && opcode==3 && ((size&1) == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_hx3_r3h
+    if(l && !r && rm!=0x1f && opcode==6 && !s) { return trans.ld1r_advsimd(args); } // -> ld1r_asisdlsop_rx1_r
+    if(l && !r && rm!=0x1f && opcode==7 && !s) { return trans.ld3r_advsimd(args); } // -> ld3r_asisdlsop_rx3_r
+    if(l && !r && rm==0x1f && opcode==2 && ((size&1) == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_h1_i1h
+    if(l && !r && rm==0x1f && opcode==3 && ((size&1) == 0)) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_h3_i3h
+    if(l && !r && rm==0x1f && opcode==6 && !s) { return trans.ld1r_advsimd(args); } // -> ld1r_asisdlsop_r1_i
+    if(l && !r && rm==0x1f && opcode==7 && !s) { return trans.ld3r_advsimd(args); } // -> ld3r_asisdlsop_r3_i
+    if(l && r && rm!=0x1f && opcode==2 && ((size&1) == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_hx2_r2h
+    if(l && r && rm!=0x1f && opcode==3 && ((size&1) == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_hx4_r4h
+    if(l && r && rm!=0x1f && opcode==6 && !s) { return trans.ld2r_advsimd(args); } // -> ld2r_asisdlsop_rx2_r
+    if(l && r && rm!=0x1f && opcode==7 && !s) { return trans.ld4r_advsimd(args); } // -> ld4r_asisdlsop_rx4_r
+    if(l && r && rm==0x1f && opcode==2 && ((size&1) == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_h2_i2h
+    if(l && r && rm==0x1f && opcode==3 && ((size&1) == 0)) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_h4_i4h
+    if(l && r && rm==0x1f && opcode==6 && !s) { return trans.ld2r_advsimd(args); } // -> ld2r_asisdlsop_r2_i
+    if(l && r && rm==0x1f && opcode==7 && !s) { return trans.ld4r_advsimd(args); } // -> ld4r_asisdlsop_r4_i
+    if(!l && !r && rm!=0x1f && (opcode == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_bx1_r1b
+    if(!l && !r && rm!=0x1f && opcode==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_bx3_r3b
+    if(!l && !r && rm==0x1f && (opcode == 0)) { return trans.st1_advsimd_sngl(args); } // -> st1_asisdlsop_b1_i1b
+    if(!l && !r && rm==0x1f && opcode==1) { return trans.st3_advsimd_sngl(args); } // -> st3_asisdlsop_b3_i3b
+    if(!l && r && rm!=0x1f && (opcode == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_bx2_r2b
+    if(!l && r && rm!=0x1f && opcode==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_bx4_r4b
+    if(!l && r && rm==0x1f && (opcode == 0)) { return trans.st2_advsimd_sngl(args); } // -> st2_asisdlsop_b2_i2b
+    if(!l && r && rm==0x1f && opcode==1) { return trans.st4_advsimd_sngl(args); } // -> st4_asisdlsop_b4_i4b
+    if(l && !r && rm!=0x1f && (opcode == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_bx1_r1b
+    if(l && !r && rm!=0x1f && opcode==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_bx3_r3b
+    if(l && !r && rm==0x1f && (opcode == 0)) { return trans.ld1_advsimd_sngl(args); } // -> ld1_asisdlsop_b1_i1b
+    if(l && !r && rm==0x1f && opcode==1) { return trans.ld3_advsimd_sngl(args); } // -> ld3_asisdlsop_b3_i3b
+    if(l && r && rm!=0x1f && (opcode == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_bx2_r2b
+    if(l && r && rm!=0x1f && opcode==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_bx4_r4b
+    if(l && r && rm==0x1f && (opcode == 0)) { return trans.ld2_advsimd_sngl(args); } // -> ld2_asisdlsop_b2_i2b
+    if(l && r && rm==0x1f && opcode==1) { return trans.ld4_advsimd_sngl(args); } // -> ld4_asisdlsop_b4_i4b
     return false;
 }
 pub fn decode_memop<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
+    let args: ArmInstr = ArmInstr {
+        insn
+    };
+    let v = ((insn >> 26) & 1) != 0;
+    let a = ((insn >> 23) & 1) != 0;
+    let r = ((insn >> 22) & 1) != 0;
+    let rs = ((insn >> 16) & 0x1f);
+    let o3 = ((insn >> 15) & 1) != 0;
+    let opc = ((insn >> 12) & 7);
+    /*
+    if(size==3 && !v && !a && !r && rs==0x1f && o3 && opc==1 && trans.has_ls64()) { return trans.st64b(args); } // -> st64b_64l_memop
+    if(size==3 && !v && !a && !r && rs==0x1f && o3 && opc==5 && trans.has_ls64()) { return trans.ld64b(args); } // -> ld64b_64l_memop
+    if((size == 0) && !v && !a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddb(args); } // -> ldaddb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrb(args); } // -> ldclrb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorb(args); } // -> ldeorb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldsetb(args); } // -> ldsetb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxb(args); } // -> ldsmaxb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminb(args); } // -> ldsminb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxb(args); } // -> ldumaxb_32_memop
+    if((size == 0) && !v && !a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminb(args); } // -> lduminb_32_memop
+    if((size == 0) && !v && !a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swpb(args); } // -> swpb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddb(args); } // -> ldaddlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrb(args); } // -> ldclrlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorb(args); } // -> ldeorlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldsetb(args); } // -> ldsetlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxb(args); } // -> ldsmaxlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminb(args); } // -> ldsminlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxb(args); } // -> ldumaxlb_32_memop
+    if((size == 0) && !v && !a && r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminb(args); } // -> lduminlb_32_memop
+    if((size == 0) && !v && !a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swpb(args); } // -> swplb_32_memop
+    if((size == 0) && !v && a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddb(args); } // -> ldaddab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrb(args); } // -> ldclrab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorb(args); } // -> ldeorab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldsetb(args); } // -> ldsetab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxb(args); } // -> ldsmaxab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminb(args); } // -> ldsminab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxb(args); } // -> ldumaxab_32_memop
+    if((size == 0) && !v && a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminb(args); } // -> lduminab_32_memop
+    if((size == 0) && !v && a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swpb(args); } // -> swpab_32_memop
+    if((size == 0) && !v && a && !r && o3 && opc==4 && haslrcpc()) { return trans.ldaprb(args); } // -> ldaprb_32l_memop
+    if((size == 0) && !v && a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddb(args); } // -> ldaddalb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrb(args); } // -> ldclralb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorb(args); } // -> ldeoralb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldsetb(args); } // -> ldsetalb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxb(args); } // -> ldsmaxalb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminb(args); } // -> ldsminalb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxb(args); } // -> ldumaxalb_32_memop
+    if((size == 0) && !v && a && r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminb(args); } // -> lduminalb_32_memop
+    if((size == 0) && !v && a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swpb(args); } // -> swpalb_32_memop
+    if(size==1 && !v && !a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddh(args); } // -> ldaddh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrh(args); } // -> ldclrh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorh(args); } // -> ldeorh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldseth(args); } // -> ldseth_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxh(args); } // -> ldsmaxh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminh(args); } // -> ldsminh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxh(args); } // -> ldumaxh_32_memop
+    if(size==1 && !v && !a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminh(args); } // -> lduminh_32_memop
+    if(size==1 && !v && !a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swph(args); } // -> swph_32_memop
+    if(size==1 && !v && !a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddh(args); } // -> ldaddlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrh(args); } // -> ldclrlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorh(args); } // -> ldeorlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldseth(args); } // -> ldsetlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxh(args); } // -> ldsmaxlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminh(args); } // -> ldsminlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxh(args); } // -> ldumaxlh_32_memop
+    if(size==1 && !v && !a && r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminh(args); } // -> lduminlh_32_memop
+    if(size==1 && !v && !a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swph(args); } // -> swplh_32_memop
+    if(size==1 && !v && a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddh(args); } // -> ldaddah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrh(args); } // -> ldclrah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorh(args); } // -> ldeorah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldseth(args); } // -> ldsetah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxh(args); } // -> ldsmaxah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminh(args); } // -> ldsminah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxh(args); } // -> ldumaxah_32_memop
+    if(size==1 && !v && a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminh(args); } // -> lduminah_32_memop
+    if(size==1 && !v && a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swph(args); } // -> swpah_32_memop
+    if(size==1 && !v && a && !r && o3 && opc==4 && haslrcpc()) { return trans.ldaprh(args); } // -> ldaprh_32l_memop
+    if(size==1 && !v && a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldaddh(args); } // -> ldaddalh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclrh(args); } // -> ldclralh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeorh(args); } // -> ldeoralh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldseth(args); } // -> ldsetalh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmaxh(args); } // -> ldsmaxalh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsminh(args); } // -> ldsminalh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumaxh(args); } // -> ldumaxalh_32_memop
+    if(size==1 && !v && a && r && !o3 && opc==7 && trans.has_lse()) { return trans.lduminh(args); } // -> lduminalh_32_memop
+    if(size==1 && !v && a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swph(args); } // -> swpalh_32_memop
+    if(size==2 && !v && !a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldadd_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclr_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeor_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldset_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmax_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsmin_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumax_32_memop
+    if(size==2 && !v && !a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> ldumin_32_memop
+    if(size==2 && !v && !a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swp_32_memop
+    if(size==2 && !v && !a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldaddl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclrl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeorl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldsetl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsminl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxl_32_memop
+    if(size==2 && !v && !a && r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> lduminl_32_memop
+    if(size==2 && !v && !a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpl_32_memop
+    if(size==2 && !v && a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldadda_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclra_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeora_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldseta_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxa_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsmina_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxa_32_memop
+    if(size==2 && !v && a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> ldumina_32_memop
+    if(size==2 && !v && a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpa_32_memop
+    if(size==2 && !v && a && !r && o3 && opc==4 && haslrcpc()) { return trans.ldapr(args); } // -> ldapr_32l_memop
+    if(size==2 && !v && a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldaddal_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclral_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeoral_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldsetal_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxal_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsminal_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxal_32_memop
+    if(size==2 && !v && a && r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> lduminal_32_memop
+    if(size==2 && !v && a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpal_32_memop
+    if(size==3 && !v && !a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldadd_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclr_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeor_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldset_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmax_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsmin_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumax_64_memop
+    if(size==3 && !v && !a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> ldumin_64_memop
+    if(size==3 && !v && !a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swp_64_memop
+    if(size==3 && !v && !a && !r && o3 && opc==2 && hasls64_v()) { return trans.st64bv0(args); } // -> st64bv0_64_memop
+    if(size==3 && !v && !a && !r && o3 && opc==3 && hasls64_v()) { return trans.st64bv(args); } // -> st64bv_64_memop
+    if(size==3 && !v && !a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldaddl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclrl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeorl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldsetl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsminl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxl_64_memop
+    if(size==3 && !v && !a && r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> lduminl_64_memop
+    if(size==3 && !v && !a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpl_64_memop
+    if(size==3 && !v && a && !r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldadda_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclra_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeora_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldseta_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxa_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsmina_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxa_64_memop
+    if(size==3 && !v && a && !r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> ldumina_64_memop
+    if(size==3 && !v && a && !r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpa_64_memop
+    if(size==3 && !v && a && !r && o3 && opc==4 && haslrcpc()) { return trans.ldapr(args); } // -> ldapr_64l_memop
+    if(size==3 && !v && a && r && !o3 && (opc == 0) && trans.has_lse()) { return trans.ldadd(args); } // -> ldaddal_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==1 && trans.has_lse()) { return trans.ldclr(args); } // -> ldclral_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==2 && trans.has_lse()) { return trans.ldeor(args); } // -> ldeoral_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==3 && trans.has_lse()) { return trans.ldset(args); } // -> ldsetal_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==4 && trans.has_lse()) { return trans.ldsmax(args); } // -> ldsmaxal_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==5 && trans.has_lse()) { return trans.ldsmin(args); } // -> ldsminal_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==6 && trans.has_lse()) { return trans.ldumax(args); } // -> ldumaxal_64_memop
+    if(size==3 && !v && a && r && !o3 && opc==7 && trans.has_lse()) { return trans.ldumin(args); } // -> lduminal_64_memop
+    if(size==3 && !v && a && r && o3 && (opc == 0) && trans.has_lse()) { return trans.swp(args); } // -> swpal_64_memop
+
+     */
     return false;
 }
 pub fn decode_comswap<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
