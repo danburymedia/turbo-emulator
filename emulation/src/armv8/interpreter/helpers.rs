@@ -216,7 +216,7 @@ fn repeat_bits_reg(regsize: u64, val: u64, width: u64) -> u64 {
     let mut result = val & ((1 << width) - 1);
     let mut i = width;
     while i < regsize {
-        result |= (result - 1);
+        result |= (result << i);
         i *= 2;
     }
     result

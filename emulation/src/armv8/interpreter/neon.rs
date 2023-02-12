@@ -6,14 +6,27 @@ use crate::armv8::interpreter::helpers::replicate;
 use crate::armv8::interpreter::main::Arm64Cpu;
 use crate::armv8::interpreter::vect_helper::{get_elem_vect, set_elem_vect, VectorReg};
 use crate::common::vect::*;
-use crate::armv8::interpreter::vector_ops::{dup_element, dup_imm, saddl, saddw, ssubl, ssubw};
+use crate::armv8::interpreter::vector_ops::{addp, bit, cmp, dup_element, dup_imm, GenCmpOps, saddl, saddw, ssubl, ssubw, umaxp, uminp};
 use crate::common::signext_arbpos;
 
+pub fn cvt_size_to_vecinfo(siz: u8, q: u8) -> VectInfo {
+    let elemsize = 8 << (siz as usize);
+    let lanecount = if q != 0 {
+        128 / elemsize
+    } else {
+        64 / elemsize
+    };
+    VectInfo {
+        lane_count: lanecount,
+        elem_size: elemsize
+    }
+}
 fn cvt_imm_to_vecinfo(imm: u8, q: u8) -> (u8, VectInfo){
     // let leftimm = (imm as u32) << (32 - 5);
     let leading = imm.trailing_zeros();
     //
-    let elemsize = pow(2, leading as usize) * 8;
+    //let elemsize = pow(2, leading as usize) * 8;
+    let elemsize = 8 << (leading as usize);
     let lanecount = if q != 0 {
         128 / elemsize
     } else {
@@ -32,7 +45,7 @@ pub fn saddl_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let size = 8 << arg.get_simd_size();
     let vinfo = VectInfo::new_128bits(size * 2);
     let upper = arg.is_bit_set(30);
-    saddl(&mut destval, nval, mval, upper, vinfo);
+    saddl(&mut destval, &nval, &mval, upper, vinfo);
     ai.vreg[arg.get_rd() as usize] = destval;
 }
 pub fn saddw_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
@@ -42,7 +55,7 @@ pub fn saddw_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let size = 8 << arg.get_simd_size();
     let vinfo = VectInfo::new_128bits(size * 2);
     let upper = arg.is_bit_set(30);
-    saddw(&mut destval, nval, mval, upper, vinfo);
+    saddw(&mut destval, &nval, &mval, upper, vinfo);
     ai.vreg[arg.get_rd() as usize] = destval;
 }
 pub fn dup_advsimd_gen(ai: &mut Arm64Cpu, arg: &ArmInstr) {
@@ -125,7 +138,11 @@ fn get_imm_modified(arg: &ArmInstr) -> u128 {
 }
 pub fn movi_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     ai.vreg[arg.get_rd()].vect = get_imm_modified(arg);
-
+}
+pub fn bic_advsimd_imm(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let vval = ai.vreg[arg.get_rd()].vect;
+    let imm = get_imm_modified(arg);
+    ai.vreg[arg.get_rd()].vect = vval & !imm;
 }
 pub fn orr_advsimd_reg(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let is128 = if (arg.insn & (1 << 30)) != 0 { true } else { false };
@@ -145,4 +162,151 @@ pub fn umov_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let mut rn = ai.vreg[arg.get_rn()].get_elem_fixed(idx as usize, vinfo);
     rn &= vinfo.mask();
     ai.set_reg(arg.get_rd(), rn, false);
+}
+pub fn cmeq_advsimd_zero(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let is_scalar = ((arg.insn >> 28) & 1) != 0;
+    let siz = arg.get_simd_size();
+
+    let elemsize = 8 << (siz);
+    let vinfo = if is_scalar {
+        VectInfo {
+            lane_count: 1,
+            elem_size: elemsize
+        }
+    } else {
+        let q = ((arg.insn >> 30) & 1) != 0;
+        if q {
+            VectInfo::new_128bits(elemsize)
+        } else {
+            VectInfo::new_64bits(elemsize)
+        }
+    };
+    let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let zero = VectorReg::new(0);
+    cmp(&mut rd, &rn, &zero, vinfo, false, GenCmpOps::Eq);
+    ai.vreg[arg.get_rd()] = rd;
+
+}
+fn cmp_gen(ai: &mut Arm64Cpu, arg: &ArmInstr, op: GenCmpOps, is_signed: bool, is_zero: bool) {
+    let is_scalar = ((arg.insn >> 28) & 1) != 0;
+    let siz = arg.get_simd_size();
+    let elemsize = 8 << (siz);
+    let vinfo = if is_scalar {
+        VectInfo {
+            lane_count: 1,
+            elem_size: elemsize
+        }
+    } else {
+        let q = ((arg.insn >> 30) & 1) != 0;
+        if q {
+            VectInfo::new_128bits(elemsize)
+        } else {
+            VectInfo::new_64bits(elemsize)
+        }
+    };
+    let mut rd = ai.vreg[arg.get_rd()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = if is_zero {
+        VectorReg::new(0)
+    } else {
+        ai.vreg[arg.get_rm()]
+    };
+    cmp(&mut rd, &rn, &rm, vinfo, is_signed, op);
+    ai.vreg[arg.get_rd()] = rd;
+}
+pub fn cmhs_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    cmp_gen(ai, arg, GenCmpOps::Ge, false, false);
+}
+pub fn cmeq_advsimd_reg(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let is_scalar = ((arg.insn >> 28) & 1) != 0;
+    let siz = arg.get_simd_size();
+    let elemsize = 8 << (siz);
+    let vinfo = if is_scalar {
+        VectInfo {
+            lane_count: 1,
+            elem_size: elemsize
+        }
+    } else {
+        let q = ((arg.insn >> 30) & 1) != 0;
+        if q {
+            VectInfo::new_128bits(elemsize)
+        } else {
+            VectInfo::new_64bits(elemsize)
+        }
+    };
+    let mut rd = ai.vreg[arg.get_rd()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = ai.vreg[arg.get_rm()];
+    cmp(&mut rd, &rn, &rm, vinfo, false, GenCmpOps::Eq);
+    ai.vreg[arg.get_rd()] = rd;
+
+}
+pub fn and_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let mut rm = ai.vreg[arg.get_rm()];
+    rd.vect = rn.vect & rm.vect;
+    let q = ((arg.insn >> 30) & 1) != 0;
+    if !q {
+        rd.vect = rd.vect as u64 as u128;
+    }
+    ai.vreg[arg.get_rd()] = rd;
+
+}
+pub fn addp_advsimd_vec(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let q = ((arg.insn >> 30) & 1) != 0;
+    let sz = arg.get_simd_size();
+    let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
+    let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let mut rm = ai.vreg[arg.get_rm()];
+    addp(&mut rd, &rn, &rm, vinfo);
+    ai.vreg[arg.get_rd()] = rd;
+}
+pub fn umaxp_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let mut rm = ai.vreg[arg.get_rm()];
+    let q = ((arg.insn >> 30) & 1) != 0;
+    let sz = arg.get_simd_size();
+    let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
+    umaxp(&mut rd, &rn, &rm, vinfo);
+    ai.vreg[arg.get_rd()] = rd;
+}
+pub fn uminp_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let mut rm = ai.vreg[arg.get_rm()];
+    let q = ((arg.insn >> 30) & 1) != 0;
+    let sz = arg.get_simd_size();
+    let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
+    uminp(&mut rd, &rn, &rm, vinfo);
+    ai.vreg[arg.get_rd()] = rd;
+}
+pub fn bit_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    /*let mut rd = ai.vreg[arg.get_rd()];
+    let mut rn = ai.vreg[arg.get_rn()];
+    let mut rm = ai.vreg[arg.get_rm()];
+    let q = ((arg.insn >> 30) & 1) != 0;
+    let vinfo = if q {
+        VectInfo::new_128bits(8)
+    } else {
+        VectInfo::new_64bits(8)
+    };
+    bit(&mut rd, &rn, &rm, vinfo);
+        ai.vreg[arg.get_rd()] = rd;
+
+     */
+    let mut op1 = ai.vreg[arg.get_rd()];
+    let mut op2 = op1;
+    let mut op3 = ai.vreg[arg.get_rm()];
+    let mut op4 = ai.vreg[arg.get_rn()];
+
+    let mut res = op1.vect ^ ((op2.vect ^ op4.vect) & op3.vect);
+    let q = ((arg.insn >> 30) & 1) != 0;
+    if !q {
+        res = res as u64 as u128;
+    }
+    ai.vreg[arg.get_rd()].vect = res;
 }

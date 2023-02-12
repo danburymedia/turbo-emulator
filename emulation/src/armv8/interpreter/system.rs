@@ -75,6 +75,8 @@ pub fn svc(ai: &mut Arm64Cpu, arg: &ArmInstr) {
         unimplemented!();
     }
 }
+pub fn hint(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+}
 pub fn dmb(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     std::sync::atomic::fence(Ordering::SeqCst);
 }

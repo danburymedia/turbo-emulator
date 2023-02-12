@@ -45,6 +45,12 @@ pub fn set_elem_vect<T: num::PrimInt>(vecval: u128, val: T, idx: usize) -> u128 
     newvecval
 }
 impl VectorReg {
+    pub fn new(val: u128) -> VectorReg {
+        VectorReg {
+            vect: val,
+            einfo: [ElemInfo::default(); 16]
+        }
+    }
     pub fn set_rounding(&mut self, idx: usize, val: bool) {
         self.einfo[idx].rounding = val;
     }
@@ -149,10 +155,10 @@ impl VectorReg {
     }
     pub fn get_elem_signed_fixed(&self, idx: usize, vinfo: VectInfo) -> i64 {
         match vinfo.elem_size {
-            8 => get_elem_vect::<i8>(self.vect, idx) as i64,
-            16 => get_elem_vect::<i16>(self.vect, idx) as i64,
-            32 => get_elem_vect::<i32>(self.vect, idx) as i64,
-            64 => get_elem_vect::<i64>(self.vect, idx) as i64,
+            8 => get_elem_vect::<u8>(self.vect, idx) as i8 as i64,
+            16 => get_elem_vect::<u16>(self.vect, idx) as i16 as i64,
+            32 => get_elem_vect::<u32>(self.vect, idx) as i32 as i64,
+            64 => get_elem_vect::<u64>(self.vect, idx) as i64,
             _ => panic!()
         }
     }

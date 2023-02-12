@@ -104,10 +104,8 @@ pub fn decode_hints<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
     if(crm==3 && op2==6 && haspauth()) { return trans.autib(args); } // -> autibz_hi_hints
     if(crm==3 && op2==7 && haspauth()) { return trans.autib(args); } // -> autibsp_hi_hints
     if(crm==4 && ((op2&1) == 0) && hasbti()) { return trans.bti(args); } // -> bti_hb_hints
-    if(1) { return trans.hint(args); } // -> hint_hm_hints
-
      */
-    return false;
+    return trans.hint(args) // -> hint_hm_hints
 }
 pub fn decode_pstate<T: Arm64DecodeTrait>(trans: &mut T, insn: u32) -> bool {
     let args: ArmInstr = ArmInstr {

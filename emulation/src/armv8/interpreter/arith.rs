@@ -425,8 +425,14 @@ pub fn cond_select(ai: &mut Arm64Cpu, arg: &ArmInstr, cop: CondSelOps) {
         ai.set_reg(rdidx, new_val & BIT32_MASK, false);
     }
 }
-fn cond_compare_worker<T: num::PrimInt + WrappingAdd>(ai: &mut Arm64Cpu, args: &ArmInstr, op2: T, is_sub: bool) {
-    let op1 = T::from(ai.get_reg(args.get_rn(), false)).unwrap();
+fn cond_compare_worker<T: num::PrimInt + WrappingAdd>(ai: &mut Arm64Cpu, args: &ArmInstr,
+                                                      op2: T, is_sub: bool) {
+    let size = mem::size_of::<T>();
+    let mut rnval = ai.get_reg(args.get_rn(), false);
+    if size == 4 {
+        rnval = rnval as u32 as u64;
+    }
+    let op1 = T::from(rnval).unwrap();
     let condraw = (args.insn >> 12) & 0b1111;
 
     if cond_holds(condraw as u8, ai.flag_status) {

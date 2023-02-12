@@ -655,6 +655,10 @@ impl Arm64DecodeTrait for Arm64Cpu {
         defs::ldr_imm_gen(self, &args);
         return true;
     }
+    fn hint(&mut self, args: ArmInstr) -> bool {
+        defs::hint(self, &args);
+        return true;
+    }
     fn str_imm_gen(&mut self, args: ArmInstr) -> bool {
         defs::str_imm_gen(self, &args);
         return true;
@@ -669,6 +673,73 @@ impl Arm64DecodeTrait for Arm64Cpu {
     }
     fn ldrsh_imm(&mut self, args: ArmInstr) -> bool {
         defs::ldrsh_imm(self, &args);
+        return true;
+    }
+    fn ld1_advsimd_mult(&mut self, args: ArmInstr) -> bool {
+        defs::ld1_advsimd_mult(self, &args);
+        return true;
+    }
+    fn st1_advsimd_mult(&mut self, args: ArmInstr) -> bool {
+        defs::st1_advsimd_mult(self, &args);
+        return true;
+    }
+    fn cmeq_advsimd_zero(&mut self, args: ArmInstr) -> bool {
+        defs::cmeq_advsimd_zero(self, &args);
+        return true;
+    }
+
+    fn and_advsimd(&mut self, args: ArmInstr) -> bool {
+        defs::and_advsimd(self, &args);
+        return true;
+    }
+
+    fn addp_advsimd_vec(&mut self, args: ArmInstr) -> bool {
+        defs::addp_advsimd_vec(self, &args);
+        return true;
+    }
+
+    fn umaxp_advsimd(&mut self, args: ArmInstr) -> bool {
+        defs::umaxp_advsimd(self, &args);
+        return true;
+    }
+    fn rev(&mut self, args: ArmInstr) -> bool {
+        defs::rev(self, &args);
+        return true;
+    }
+    fn stlr(&mut self, args: ArmInstr) -> bool {
+        defs::stlr(self, &args);
+        return true;
+    }
+    fn cmeq_advsimd_reg(&mut self, args: ArmInstr) -> bool {
+        defs::cmeq_advsimd_reg(self, &args);
+        return true;
+    }
+    fn bit_advsimd(&mut self, args: ArmInstr) -> bool {
+        defs::bit_advsimd(self, &args);
+        return true;
+    }
+    fn ldar(&mut self, args: ArmInstr) -> bool {
+        defs::ldar(self, &args);
+        return true;
+    }
+    fn cmhs_advsimd(&mut self, args: ArmInstr) -> bool {
+        defs::cmhs_advsimd(self, &args);
+        return true;
+    }
+    fn uminp_advsimd(&mut self, args: ArmInstr) -> bool {
+        defs::uminp_advsimd(self, &args);
+        return true;
+    }
+    fn bic_advsimd_imm(&mut self, args: ArmInstr) -> bool {
+        defs::bic_advsimd_imm(self, &args);
+        return true;
+    }
+    fn stxr(&mut self, args: ArmInstr) -> bool {
+        defs::stxr(self, &args);
+        return true;
+    }
+    fn ldxr(&mut self, args: ArmInstr) -> bool {
+        defs::ldxr(self, &args);
         return true;
     }
 }

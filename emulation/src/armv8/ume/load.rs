@@ -108,7 +108,7 @@ pub fn init_stack(ri: &mut Arm64Cpu, ef: &Elf) {
         auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
     }
     // auxv.push(Auxv { typ: AuxType::Base, value: 0x40000000});
-    // auxv.push(Auxv { typ: AuxType::Phdr, value: logbase + 0x10000 + ef.header.e_phoff}); 0x40000000
+    //auxv.push(Auxv { typ: AuxType::Phdr, value: logbase + ef.header.e_phoff}); //0x40000000
     auxv.push(Auxv { typ: AuxType::Entry, value: iv.objects[objidx].entry_point});
     auxv.push(Auxv { typ: AuxType::PhNum, value: ef.header.e_phnum as u64 });
     auxv.push(Auxv { typ: AuxType::PhEnt, value: ef.header.e_phentsize as u64 });

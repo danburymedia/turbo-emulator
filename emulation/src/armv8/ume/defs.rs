@@ -336,6 +336,20 @@ pub fn arm64_translate_syscall(val: u32) -> Option<SyscallType> {
         ARM64_SYS_FCHOWN => Some(SyscallType::Fchown),
         ARM64_SYS_FCHMOD => Some(SyscallType::Fchmod),
         ARM64_SYS_UTIMENSAT => Some(SyscallType::Utimensat),
+        ARM64_SYS_UNAME => Some(SyscallType::Uname),
+        ARM64_SYS_FTRUNCATE => Some(SyscallType::Ftruncate),
+        ARM64_SYS_FACCESSAT => Some(SyscallType::Faccessat),
+        ARM64_SYS_FSTATAT => Some(SyscallType::Fstatat),
+        ARM64_SYS_MUNMAP => Some(SyscallType::Munmap),
+        ARM64_SYS_MPROTECT => Some(SyscallType::Mprotect),
+        ARM64_SYS_SET_ROBUST_LIST => Some(SyscallType::SetRobustList),
+        ARM64_SYS_RSEQ => Some(SyscallType::Rseq),
+        ARM64_SYS_PRLIMIT64 => Some(SyscallType::Prlimit64),
+        ARM64_SYS_READLINKAT => Some(SyscallType::Readlinkat),
+        ARM64_SYS_GETRANDOM => Some(SyscallType::Getrandom),
+        ARM64_SYS_FUTEX => Some(SyscallType::Futex),
+        ARM64_SYS_GETTID => Some(SyscallType::Gettid),
+        ARM64_SYS_GETPID => Some(SyscallType::Getpid),
         _ => None
     }
 }

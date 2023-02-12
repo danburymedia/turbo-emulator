@@ -22,7 +22,7 @@ pub fn vec_maxmin<T: num::PrimInt>(ai: &mut Arm64Cpu, rn: usize, rd: usize, elem
     }
     ai.vreg[rd].vect = maxmin.to_u128().unwrap();
 }
-pub fn dup_element(src: VectorReg, src_idx: usize, vinfo: VectInfo) -> VectorReg {
+pub fn dup_element(src: &VectorReg, src_idx: usize, vinfo: VectInfo) -> VectorReg {
     let mut vec: VectorReg = Default::default();
     let val = src.get_elem_fixed(src_idx, vinfo);
     for i in 0..vinfo.lane_count {
@@ -65,7 +65,7 @@ pub fn bif(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInf
         dst.set_elem_fixed(result, i, vinfo)
     }
 }
-pub fn bit(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo)  {
+pub fn bit(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo)  {
     let odst = dst.clone();
     dst.clear_vect();
     for i in 0..vinfo.lane_count {
@@ -87,7 +87,7 @@ pub fn bsl(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInf
         dst.set_elem_fixed(result, i, vinfo)
     }
 }
-pub fn bic_imm(dst: &mut VectorReg, src: VectorReg, imm: u64, vinfo: VectInfo)  {
+pub fn bic_imm(dst: &mut VectorReg, src: &VectorReg, imm: u64, vinfo: VectInfo)  {
     dst.clear_vect();
     let mut result: [u64; 16] = [0; 16];
     let srcval = imm & vinfo.mask();
@@ -108,7 +108,7 @@ pub fn orr_imm(dst: &mut VectorReg, src: VectorReg, imm: u64, vinfo: VectInfo)  
     dst.set_from_array(&result, vinfo);
 
 }
-pub fn uxtl(dst: &mut VectorReg, src: VectorReg, upper: bool, vinfo: VectInfo)  {
+pub fn uxtl(dst: &mut VectorReg, src: &VectorReg, upper: bool, vinfo: VectInfo)  {
     let half = vinfo.half_width();
     dst.clear_vect();
     let addend = if upper { vinfo.lane_count } else { 0 };
@@ -119,7 +119,7 @@ pub fn uxtl(dst: &mut VectorReg, src: VectorReg, upper: bool, vinfo: VectInfo)  
     }
 
 }
-pub fn sxtl(dst: &mut VectorReg, src: VectorReg, upper: bool, vinfo: VectInfo)  {
+pub fn sxtl(dst: &mut VectorReg, src: &VectorReg, upper: bool, vinfo: VectInfo)  {
     let half = vinfo.half_width();
     dst.clear_vect();
     let addend = if upper { vinfo.elem_size } else { 0 };
@@ -210,7 +210,7 @@ pub fn cnt(dst: &mut VectorReg, src: VectorReg, vinfo: VectInfo)  {
         dst.set_elem_fixed(val as u64, i, vinfo);
     }
 }
-pub fn mul(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
+pub fn mul(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo) {
     dst.clear_vect();
     for i in 0..vinfo.lane_count {
         let src1val = src1.get_elem_fixed(i, vinfo);
@@ -220,11 +220,11 @@ pub fn mul(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInf
     }
 
 }
-pub fn mul_by_elem(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, idx: usize, vinfo: VectInfo) {
+pub fn mul_by_elem(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, idx: usize, vinfo: VectInfo) {
     dst.clear_vect();
     let indexform = vinfo.elem_use_whole_reg();
     let mut temp: VectorReg = dup_element(src2, idx, indexform);
-    mul(dst, src1, temp, vinfo);
+    mul(dst, src1, &temp, vinfo);
 }
 /*
 pub fn mla_by_elem(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, idx: usize, vinfo: VectInfo) {
@@ -241,7 +241,7 @@ pub fn mls_by_elem(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, idx: u
 }
 
  */
-pub fn sub(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
+pub fn sub(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo) {
     dst.clear_vect();
     for i in 0..vinfo.lane_count {
         let src1val = src1.get_elem_fixed_justified_left(i, vinfo);
@@ -260,7 +260,7 @@ pub fn sub(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInf
     }
 
 }
-pub fn add(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
+pub fn add(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo) {
     dst.clear_vect();
     dst.clear_einfo();
     for i in 0..vinfo.lane_count {
@@ -276,30 +276,33 @@ pub fn add(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInf
         if (bit1 == bit2) && (bit1 != bit3) {
             dst.set_unsigned_sat(i, true);
         }
-        dst.set_elem_fixed((justval >> ((64 - vinfo.lane_count) as u64)), i, vinfo);
+        dst.set_elem_fixed((justval >> ((64 - vinfo.elem_size) as u64)), i, vinfo);
     }
 
 }
 
 
-pub fn addp(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
+pub fn addp(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo) {
     let mut temp1: VectorReg = Default::default();
     let mut temp2: VectorReg = Default::default();
     uzp(&mut temp1, src1, src2, false, vinfo);
     uzp(&mut temp2, src1, src2, true, vinfo);
-    add(dst, temp1, temp2, vinfo);
+    add(dst, &temp1, &temp2, vinfo);
 
 }
+/*
 pub fn mla(dst: &mut VectorReg, scra: VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
     let mut temp1: VectorReg = Default::default();
     mul(&mut temp1, src1, src2, vinfo);
     add(dst, scra, temp1, vinfo);
 
 }
-pub fn mls(dst: &mut VectorReg, srca: VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
+
+ */
+pub fn mls(dst: &mut VectorReg, srca: &VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo) {
     let mut temp1: VectorReg = Default::default();
     mul(&mut temp1, src1, src2, vinfo);
-    sub(dst, srca, temp1, vinfo);
+    sub(dst, srca, &temp1, vinfo);
 }
 pub fn ushl(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
     dst.clear_vect();
@@ -597,47 +600,80 @@ pub fn sadalp(dest: &mut VectorReg, src: VectorReg, vinfo: VectInfo) {
 pub fn uadalp(dest: &mut VectorReg, src: VectorReg, vinfo: VectInfo) {
     addlp(dest, src, vinfo, false, true)
 }
-pub fn uaddw(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn uaddw(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp = VectorReg::default();
     uxtl(&mut temp, src2, is_two, vinfo);
-    add(dest, src1, temp, vinfo);
+    add(dest, src1, &temp, vinfo);
 }
-pub fn usubw(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
-    let mut temp = VectorReg::default();
-    uxtl(&mut temp, src2, is_two, vinfo);
-    sub(dest, src1, temp, vinfo);
-}
-pub fn saddw(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn saddw(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp = VectorReg::default();
     sxtl(&mut temp, src2, is_two, vinfo);
-    add(dest, src1, temp, vinfo);
+    add(dest, src1, &temp, vinfo);
 }
-pub fn ssubw(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn ssubw(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp = VectorReg::default();
     sxtl(&mut temp, src2, is_two, vinfo);
-    sub(dest, src1, temp, vinfo);
+    sub(dest, src1, &temp, vinfo);
 }
-pub fn usubl(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn usubl(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp1 = VectorReg::default();
     let mut temp2 = VectorReg::default();
     uxtl(&mut temp1, src1, is_two, vinfo);
     uxtl(&mut temp2, src2, is_two, vinfo);
-    sub(dest, temp1, temp2, vinfo)
+    sub(dest, &temp1, &temp2, vinfo)
 }
-pub fn saddl(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn uminp(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg,
+             vinfo: VectInfo) {
+    uminmaxp(dest, src1, src2, vinfo, false);
+}
+pub fn umaxp(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg,
+                vinfo: VectInfo) {
+    uminmaxp(dest, src1, src2, vinfo, true);
+}
+pub fn uminmaxp(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg,
+             vinfo: VectInfo, max: bool) {
+    let mut result: [u64; 16] = [0; 16];
+    let mut currentptr = src1;
+    let lanes = vinfo.lane_count;
+    for j in 0..2 {
+        for i in (0..vinfo.lane_count).step_by(2) {
+            let val1 = currentptr.get_elem_fixed(i, vinfo);
+            let val2 = currentptr.get_elem_fixed(i + 1, vinfo);
+            let dst = if max {
+                if val1 > val2 {
+                    val1
+                } else {
+                    val2
+                }
+            } else {
+                if val1 < val2 {
+                    val1
+                } else {
+                    val2
+                }
+            };
+            result[(i >> 1) + (j * lanes / 2)] = dst;
+        }
+        currentptr = src2;
+    }
+    dest.set_from_array(&result, vinfo);
+}
+pub fn saddl(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp1 = VectorReg::default();
     let mut temp2 = VectorReg::default();
     sxtl(&mut temp1, src1, is_two, vinfo);
     sxtl(&mut temp2, src2, is_two, vinfo);
-    add(dest, temp1, temp2, vinfo);
+    add(dest, &temp1, &temp2, vinfo);
 }
-pub fn ssubl(dest: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_two: bool, vinfo: VectInfo) {
+pub fn ssubl(dest: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_two: bool, vinfo: VectInfo) {
     let mut temp1 = VectorReg::default();
     let mut temp2 = VectorReg::default();
     sxtl(&mut temp1, src1, is_two, vinfo);
     sxtl(&mut temp2, src2, is_two, vinfo);
-    sub(dest, temp1, temp2, vinfo);
+    sub(dest, &temp1, &temp2, vinfo);
 }
+/*
+
 pub fn zip(ai: &mut Arm64Cpu, rn: usize, rm: usize, rd: usize, part: usize, vinfo: VectInfo) {
     let rnval = ai.vreg[rn];
     let rmval = ai.vreg[rm];
@@ -652,19 +688,23 @@ pub fn zip(ai: &mut Arm64Cpu, rn: usize, rm: usize, rd: usize, part: usize, vinf
     ai.vreg[rd].set_from_array(&result, vinfo);
 
 }
-pub fn uzp(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, is_uzp2: bool, vinfo: VectInfo) {
+
+ */
+pub fn uzp(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, is_uzp2: bool, vinfo: VectInfo) {
     //
-    let mut result: [u64; 32] = [0; 32];
+    let mut result: [u64; 64] = [0; 64];
     let part = if is_uzp2 { 1 } else { 0 };
     for i in 0..vinfo.lane_count {
         result[i] = src1.get_elem_fixed(i, vinfo);
         result[vinfo.lane_count + i] = src2.get_elem_fixed(i, vinfo);
     }
+    dst.clear_vect();
     for i in 0..vinfo.lane_count {
         dst.set_elem_fixed(result[(2 * i) + part], i, vinfo);
     }
 
 }
+/*
 pub fn uaba(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo) {
     let mut temp = VectorReg::default();
     dst.clear_unused(vinfo);
@@ -922,6 +962,8 @@ pub fn trn<T: num::PrimInt>(ai: &mut Arm64Cpu, rn: usize, rm: usize, rd: usize, 
     }
     ai.vreg[rd].set_from_array(&mut result, vinfo);
 }
+
+ */
 #[derive(Copy, Clone)]
 pub enum GenCmpOps {
     Eq,
@@ -931,13 +973,14 @@ pub enum GenCmpOps {
     Lt,
     Ne,
 }
-pub fn cmp(dst: &mut VectorReg, src1: VectorReg, src2: VectorReg, vinfo: VectInfo, is_signed: bool, cnd: GenCmpOps) {
+pub fn cmp(dst: &mut VectorReg, src1: &VectorReg, src2: &VectorReg, vinfo: VectInfo,
+           is_signed: bool, cnd: GenCmpOps) {
     dst.clear_vect();
     for i in 0..vinfo.lane_count {
         let a = src1.get_elem_fixed(i, vinfo);
         let b = src2.get_elem_fixed(i, vinfo);
         let sa = src1.get_elem_signed_fixed(i, vinfo);
-        let sb = src1.get_elem_signed_fixed(i, vinfo);
+        let sb = src2.get_elem_signed_fixed(i, vinfo);
         let condpass = match cnd {
             GenCmpOps::Eq => {
                 a == b

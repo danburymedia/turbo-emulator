@@ -80,7 +80,7 @@ pub fn rev16_int(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     ai.set_reg(dst, val, false);
 
 }
-pub fn rev_int(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+pub fn rev(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let dst = arg.get_rd();
     let src = arg.get_rn();
     let is64set = arg.is_64bit_set();

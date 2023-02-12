@@ -5,7 +5,7 @@ use std::ops::Add;
 use std::sync::Arc;
 use base::{debug, errno_result, pagesize, sys};
 use base::platform::MemoryMapping;
-use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom};
+use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex};
 use crate::common::genfunc::round_up;
 use crate::elf::{MachineType, UserModeRuntime};
 use libc::mmap;
@@ -29,6 +29,7 @@ pub enum SyscallType {
     Open,
     Fstatat,
     Read,
+    Prlimit64,
     Mmap,
     Close,
     Mprotect,
@@ -86,7 +87,10 @@ pub enum SyscallType {
     Rseq,
     Ugetrlimit,
     Readlink,
+    Readlinkat,
     Getrandom,
+    Futex,
+    Gettid
 }
 #[derive(Copy, Clone, PartialEq)]
 pub struct SyscallIn {
@@ -163,7 +167,23 @@ pub fn u_fchown(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sysout, res);
     sysout
 }
+pub fn u_futex(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    // todo: assuming 64-bit little endian on both
+    let fduaddr = sysin.args[0];
+    let fop = sysin.args[1];
+    let val = sysin.args[2];
+    let timeout = sysin.args[3];
+    let uaddr2 = sysin.args[4];
+    let val3 = sysin.args[5];
 
+    let res = unsafe {
+        syscall(SYS_futex, fduaddr as u32, fop as u32,
+                val as u32, timeout, uaddr2 as u32, val3 as u32)
+    };
+    let mut sysout: SyscallOut = Default::default();
+    generic_error_handle_maxarch_int(&mut sysout, res, true);
+    sysout
+}
 pub fn u_fchmod(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let fd = sysin.args[0];
     let mode = sysin.args[1];
@@ -342,6 +362,22 @@ pub fn u_getrandom(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let mut sout: SyscallOut = Default::default();
     let res = unsafe {
         getrandom(buf as *mut c_void, buflen as size_t, flags as c_uint)
+    };
+    generic_error_handle_maxarch_int(&mut sout, res as i64, umr.is_64);
+    sout
+}
+pub fn u_readlinkat(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let dirfd = sysin.args[0];
+    let path = sysin.args[1];
+    let buf = sysin.args[1];
+    let bufs = sysin.args[2];
+    let mut sout: SyscallOut = Default::default();
+    let newpath = CString::new(
+        fix_path(umr.str_path.as_str(), path as *const c_char)
+    ).unwrap();
+    let res = unsafe {
+        readlinkat(dirfd as c_int, newpath.as_ptr(),
+                   buf as *mut c_char, bufs as size_t)
     };
     generic_error_handle_maxarch_int(&mut sout, res as i64, umr.is_64);
     sout
@@ -529,7 +565,7 @@ pub fn u_mmap(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
             return sout;
         }
     } else {
-        let size = round_up(len, umr.guest_pagesize);
+        let size = round_up(len, umr.guest_pagesize); // todo: necessary?
         let origadr = AddressRange::from_start_and_size(addr, size).unwrap();
         let res = ms.mmap_region.as_mut().unwrap()
             .allocate_at(
@@ -572,9 +608,7 @@ pub fn u_mmap(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
 }
 pub fn u_gettid(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let tid = unsafe { libc::gettid() };
-    if ume.is_debug {
-        debug!("tid system call: pid is {:x}", tid);
-    }
+    debug!("tid system call: pid is {:x}", tid);
     SyscallOut {
         ret1: tid as u64,
         .. Default::default()
@@ -588,6 +622,7 @@ pub fn u_exit_group(sysin: SyscallIn, ume: &mut UserModeRuntime) -> ! {
     unreachable!();
 }
 pub fn u_uname(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    // todo: return arch specific string
     let addr = sysin.args[0];
     let retval = unsafe {
         uname(addr as *mut utsname)
@@ -947,6 +982,25 @@ pub fn u_ppoll(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sout, ret);
     return sout;
 }
+// ARM64_SYS_PRLIMIT64
+pub fn u_prlimit64(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    // todo: if we support anything other than 64 bit or little endian guest/host, change this
+    let pid = sysin.args[0];
+    let res = sysin.args[1];
+    //let mut new: rlimit = unsafe {mem::zeroed()};
+    //let mut old: rlimit = unsafe {mem::zeroed()};
+    let newaddr = sysin.args[2];
+    let oldaddr = sysin.args[3];
+    let new_limit: *const rlimit64 = newaddr as *const rlimit64;
+    let old_limit: *mut rlimit64 = oldaddr as *mut rlimit64;
+    let mut sout: SyscallOut = Default::default();
+    let res = unsafe {
+        prlimit64(pid as pid_t, res as __rlimit_resource_t, new_limit, old_limit)
+    };
+    generic_error_handle(&mut sout, res);
+    sout
+
+}
 pub fn u_getrlimit(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let res = sysin.args[0];
     let rlim = sysin.args[1];
@@ -1211,10 +1265,8 @@ pub fn u_brk(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let new_val = sysin.args[0];
     let mut ms = ume.memstate.lock();
     let new_value_page = round_up(new_val, ume.guest_pagesize);
-    if ume.is_debug {
-        debug!("brk system call: current start is {:x}, current end is {:x}, value passed is {:x}",
+    debug!("brk system call: current start is {:x}, current end is {:x}, value passed is {:x}",
             ms.brk, ms.brk_max, new_val);
-    }
     let mut sout: SyscallOut = Default::default();
     if new_val == 0 {
         // return current br;
@@ -1342,6 +1394,18 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
         SyscallType::Ugetrlimit => u_getrlimit(sysin, cpu.get_ume()),
         SyscallType::Readlink => u_readlink(sysin, cpu.get_ume()),
         SyscallType::Getrandom => u_getrandom(sysin, cpu.get_ume()),
+        SyscallType::Prlimit64 => u_prlimit64(sysin, cpu.get_ume()),
+        SyscallType::Readlinkat => u_readlinkat(sysin, cpu.get_ume()),
+        SyscallType::Gettid => u_gettid(sysin, cpu.get_ume()),
+        SyscallType::Futex => {
+            u_futex(sysin, cpu.get_ume())
+            /* let mut s = SyscallOut::default();
+            s.ret1 = -EINVAL as i32 as i64 as u64;
+            s.is_error = true;
+            s
+
+             */
+        }
         _ => {
             panic!("unimpl syscall");
         },
