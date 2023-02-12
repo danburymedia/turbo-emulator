@@ -742,4 +742,8 @@ impl Arm64DecodeTrait for Arm64Cpu {
         defs::ldxr(self, &args);
         return true;
     }
+    fn prfm_imm(&mut self, args: ArmInstr) -> bool {
+        defs::prfm_imm(self, &args);
+        return true;
+    }
 }

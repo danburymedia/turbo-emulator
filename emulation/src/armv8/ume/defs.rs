@@ -350,6 +350,7 @@ pub fn arm64_translate_syscall(val: u32) -> Option<SyscallType> {
         ARM64_SYS_FUTEX => Some(SyscallType::Futex),
         ARM64_SYS_GETTID => Some(SyscallType::Gettid),
         ARM64_SYS_GETPID => Some(SyscallType::Getpid),
+        ARM64_SYS_GETRLIMIT => Some(SyscallType::Getrlimit),
         _ => None
     }
 }

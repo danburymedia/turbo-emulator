@@ -5,7 +5,7 @@ use std::ops::Add;
 use std::sync::Arc;
 use base::{debug, errno_result, pagesize, sys};
 use base::platform::MemoryMapping;
-use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex};
+use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, TCGETS, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex, termios};
 use crate::common::genfunc::round_up;
 use crate::elf::{MachineType, UserModeRuntime};
 use libc::mmap;
@@ -85,7 +85,7 @@ pub enum SyscallType {
     Statx,
     SetRobustList,
     Rseq,
-    Ugetrlimit,
+    Getrlimit,
     Readlink,
     Readlinkat,
     Getrandom,
@@ -473,6 +473,16 @@ pub fn u_ioctl(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let mut sout: SyscallOut = Default::default();
 
     match host_ioctl {
+        TCGETS => {
+            // todo: fix if different endian/host on guest/host
+            let addr = sysin.args[2];
+            let mut str: *mut termios = addr as *mut termios;
+            let ret = unsafe { ioctl(fd as c_int, TCGETS, str) };
+            generic_error_handle(&mut sout, ret);
+            if ret < 0 {
+                return sout;
+            }
+        }
         TIOCGWINSZ => {
             let mut ws: winsize = unsafe { mem::zeroed() };
             let ret = unsafe { ioctl(fd as c_int, TIOCGWINSZ, &mut ws) };
@@ -1391,7 +1401,7 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
             s.is_error = true;
             s
         }
-        SyscallType::Ugetrlimit => u_getrlimit(sysin, cpu.get_ume()),
+        SyscallType::Getrlimit => u_getrlimit(sysin, cpu.get_ume()),
         SyscallType::Readlink => u_readlink(sysin, cpu.get_ume()),
         SyscallType::Getrandom => u_getrandom(sysin, cpu.get_ume()),
         SyscallType::Prlimit64 => u_prlimit64(sysin, cpu.get_ume()),

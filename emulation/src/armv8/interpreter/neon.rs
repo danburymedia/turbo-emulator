@@ -126,7 +126,7 @@ fn get_imm_modified(arg: &ArmInstr) -> u128 {
     let upper = ((arg.insn >> 16) & 0b111) as u64; // abc
     let combined = lower | (upper << 5);
     let cmode = ((arg.insn >> 12) & 0xf) as u64;
-    let mut data = advsimd_expand_imm(((arg.insn >> 29) & 1) as u64,
+    let data = advsimd_expand_imm(((arg.insn >> 29) & 1) as u64,
                                   cmode, combined) as u128;
     if (arg.insn & (1 << 30)) != 0 {
         data | (data << 64)
