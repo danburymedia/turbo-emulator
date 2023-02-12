@@ -41,7 +41,7 @@ pub fn set_elem_vect<T: num::PrimInt>(vecval: u128, val: T, idx: usize) -> u128 
     let shr_amt = sizebits * idx;
     let mask = (1 << sizebits) - 1;
     newvecval &= !(mask << shr_amt);
-    newvecval |= ((val.to_u128().unwrap()) << shr_amt);
+    newvecval |= (val.to_u128().unwrap()) << shr_amt;
     newvecval
 }
 impl VectorReg {

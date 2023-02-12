@@ -1,3 +1,4 @@
+#![allow(non_snake_case, dead_code)]
 use std::mem;
 pub const CRC32_POLY: u32 = 0x04C11DB7;
 pub const CRC32C_POLY: u32 = 0x1EDC6F41;
@@ -107,13 +108,13 @@ const AES_INV_SHIFT: [u8; 16] = [
 ];
 
 fn choose(x: u32, y: u32, z: u32) -> u32 {
-    (((y ^ z) & x) ^ z)
+    ((y ^ z) & x) ^ z
 }
 fn parity(x: u32, y: u32, z: u32) -> u32 {
     (x ^ y ^ z)
 }
 fn majority(x: u32, y: u32, z: u32) -> u32 {
-    ((x & y) | ((x | y) & z))
+    (x & y) | ((x | y) & z)
 }
 fn sigma0(x: u32) -> u32 {
     x.rotate_right(2) ^ x.rotate_right(13) ^ x.rotate_right(22)
@@ -126,7 +127,7 @@ fn aes_ffmul2(a: u8) -> u8 {
     if a & 0x80 != 0 {
         ((a << 1) ^ 0x1b)
     } else {
-        (a << 1)
+        a << 1
     }
 }
 fn aes_ffmul(a: u8, b: u8) -> u8 {
@@ -170,7 +171,7 @@ pub fn poly32_mod2(n: usize, data: u64, poly: u32) -> u32 {
     while i >= 32 {
         let polysh32: u64 = (poly as u64) << ((i - 32) as u64);
         let mask: u64 = ((1 << i) as u64) - 1;
-        newdata = ((newdata & mask) ^ polysh32);
+        newdata = (newdata & mask) ^ polysh32;
         i -= 1;
     }
     (newdata & 0xffffffff) as u32
@@ -232,10 +233,10 @@ pub fn crc32checksum_64(acc: u32, val: u64, poly: u32) -> u32 {
     return crc32checksum(temp1, (val >> 32) as u32, poly);
 }
 pub fn sha256op(X: &mut [u32], Y: &mut [u32], Z: &mut [u32]) {
-    let mut T0: u32 = 0;
-    let mut T1: u32 = 0;
-    let mut T2: u32 = 0;
-    let mut T3: u32 = 0;
+    let mut T0: u32;
+    let mut T1: u32;
+    let mut T2: u32;
+    let mut T3: u32;
     for i in 0..4 {
         T0 = choose(Y[0], Y[1], Y[2]);
         T1 = majority(X[0], X[1], X[2]);
@@ -277,8 +278,8 @@ pub enum SHAOp {
     Majority
 }
 pub fn _sha1op(X: &mut [u32], Y: &mut [u32], Z: &mut [u32], op: SHAOp) {
-    let mut T1: u32 = 0;
-    let mut T2: u32 = 0;
+    let mut T1: u32;
+    let mut T2: u32;
     for i in 0..4 {
         match op {
             SHAOp::Choose => {

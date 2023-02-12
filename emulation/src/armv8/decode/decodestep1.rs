@@ -1,3 +1,5 @@
+#![allow(unused_parens)]
+
 use crate::armv8::decodedefs::*;
 use crate::armv8::decoder64::Arm64DecodeTrait;
 use crate::armv8::decode::decodestep2::*;

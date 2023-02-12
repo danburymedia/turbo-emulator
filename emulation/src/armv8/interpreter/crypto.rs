@@ -35,7 +35,7 @@ pub fn crypto_sha_register_3(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let mut x = ai.vreg[arg.get_rd() as usize].vect.to_ne_bytes();
     let y = ai.vreg[arg.get_rn() as usize].vect.to_ne_bytes();
     let w = ai.vreg[arg.get_rm() as usize].vect.to_ne_bytes();
-    let mut result: u128 = 0;
+    let mut result: u128;
     match opcode {
         0 => {
             sha1c(&mut x, &y, &w);
@@ -67,7 +67,7 @@ pub fn crypto_sha_register_2(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let opcode =  ((arg.insn >> 12) & 0b11111);
     let mut x = ai.vreg[arg.get_rd() as usize].vect.to_ne_bytes();
     let y = ai.vreg[arg.get_rn() as usize].vect.to_ne_bytes();
-    let mut result: u128 = 0;
+    let mut result: u128;
     match opcode {
         0 => {
             sha1h(&mut x, &y);

@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use crate::armv8::interpreter::main::Arm64Cpu;
 use crate::armv8::interpreter::vect_helper::{get_elem_vect, set_elem_vect, VectorReg};
 use crate::common::vect::*;

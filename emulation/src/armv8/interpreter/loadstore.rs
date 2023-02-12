@@ -364,7 +364,7 @@ pub fn ldrsb_imm(ai: &mut Arm64Cpu, args: &ArmInstr) {
 pub fn strh_imm(ai: &mut Arm64Cpu, args: &ArmInstr) {
     let mut wback = false;
     let mut postindex = false;
-    let mut offset = 0;
+    let mut offset;
     let scale = args.get_ls_size();
     if (args.insn & (1 << 24)) != 0 {
         // unsigned offset

@@ -76,7 +76,6 @@ pub fn dup_advsimd_gen(ai: &mut Arm64Cpu, arg: &ArmInstr) {
 
 }
 fn advsimd_expand_imm(op: u64, cmode: u64, imm8: u64) -> u64 {
-    let mut imm64: u64 = 0;
     let cmode31 = (cmode >> 1) & 0b111;
     match cmode31 {
         0 | 1 | 2 | 3 => {
@@ -244,8 +243,8 @@ pub fn cmeq_advsimd_reg(ai: &mut Arm64Cpu, arg: &ArmInstr) {
 }
 pub fn and_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let mut rd = ai.vreg[arg.get_rd()];
-    let mut rn = ai.vreg[arg.get_rn()];
-    let mut rm = ai.vreg[arg.get_rm()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = ai.vreg[arg.get_rm()];
     rd.vect = rn.vect & rm.vect;
     let q = ((arg.insn >> 30) & 1) != 0;
     if !q {
@@ -259,15 +258,15 @@ pub fn addp_advsimd_vec(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let sz = arg.get_simd_size();
     let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
     let mut rd = ai.vreg[arg.get_rd()];
-    let mut rn = ai.vreg[arg.get_rn()];
-    let mut rm = ai.vreg[arg.get_rm()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = ai.vreg[arg.get_rm()];
     addp(&mut rd, &rn, &rm, vinfo);
     ai.vreg[arg.get_rd()] = rd;
 }
 pub fn umaxp_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let mut rd = ai.vreg[arg.get_rd()];
-    let mut rn = ai.vreg[arg.get_rn()];
-    let mut rm = ai.vreg[arg.get_rm()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = ai.vreg[arg.get_rm()];
     let q = ((arg.insn >> 30) & 1) != 0;
     let sz = arg.get_simd_size();
     let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
@@ -276,8 +275,8 @@ pub fn umaxp_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
 }
 pub fn uminp_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
     let mut rd = ai.vreg[arg.get_rd()];
-    let mut rn = ai.vreg[arg.get_rn()];
-    let mut rm = ai.vreg[arg.get_rm()];
+    let rn = ai.vreg[arg.get_rn()];
+    let rm = ai.vreg[arg.get_rm()];
     let q = ((arg.insn >> 30) & 1) != 0;
     let sz = arg.get_simd_size();
     let vinfo = cvt_size_to_vecinfo(sz as u8, q as u8);
@@ -299,8 +298,8 @@ pub fn bit_advsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
 
      */
     let mut op1 = ai.vreg[arg.get_rd()];
-    let mut op2 = op1;
-    let mut op3 = ai.vreg[arg.get_rm()];
+    let op2 = op1;
+    let op3 = ai.vreg[arg.get_rm()];
     let mut op4 = ai.vreg[arg.get_rn()];
 
     let mut res = op1.vect ^ ((op2.vect ^ op4.vect) & op3.vect);
