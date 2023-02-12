@@ -330,15 +330,16 @@ impl UserModeRuntime {
                 let offset = ph.p_offset - padding;
                 let memsz = ph.p_memsz + padding;
                 let filesz = ph.p_filesz + padding;
+                let realsize = round_up(filesz, pagesize() as u64); // we use native for this one
 
                 debug!(
-                    "\t  └──> to file {:x?} | mem {:x?} | base {:x?} | filesz {:x}",
-                    offset..(offset + memsz),
+                    "\t  └──> to file {:x?} | mem {:x?} | real content {:x?} | base {:x?} | filesz {:x}",
+                    offset..(offset + realsize),
                     vaddr..(vaddr + memsz),
+                    vaddr..(vaddr + filesz),
                     (vaddr + (base as u64))..((base as u64) + vaddr + memsz),
                     filesz
                 );
-                let realsize = round_up(filesz, pagesize() as u64); // we use native for this one
                 memareana.add_fd_offset((vaddr as usize) - mem_range.start, realsize as usize, &fs_file, offset).unwrap();
                 // But if there's some bytes left over...
                 if ph.p_memsz > ph.p_filesz {

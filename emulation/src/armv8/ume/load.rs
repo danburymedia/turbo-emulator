@@ -12,11 +12,7 @@ use crate::linux_usermode::defs::SigConstants;
 
 pub fn init_arm64_runtime(ef: &Elf) -> UserModeRuntime {
     let is64 = ef.is_64;
-    let (stackbase, mmap_end) = if is64 {
-        (0x8000000000 as u64, 0x40000000 as u64)
-    } else {
-        (0x7FFFFFFF as u64, 0x40000000 as u64)
-    };
+    let (stackbase, mmap_end) = (0x8000000000 as u64, 0x40000000 as u64);
     let max_stack_size: u64 = 1024 * 1024 * 8;
     let memstate = MemState {
         stack_size: max_stack_size,

@@ -101,7 +101,6 @@ impl Arm64Cpu {
         false
     }
     pub fn write32(&mut self, addr: u64, val: u32, mem_type: MemAccessStr) -> bool {
-
         if mem_type.is_atomic {
             self.memory_access.write_phys_32_atomic(addr as u64,
                                                     val, MemEndian::Little,
