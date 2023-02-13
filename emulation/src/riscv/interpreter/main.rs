@@ -3,6 +3,7 @@ use std::sync::{Arc};
 use libc::sysinfo;
 use sync::Mutex;
 use vm_memory::GuestMemory;
+use rustc_hash::FxHashMap;
 use crate::common::memory::{flat_mem, MemEndian};
 use crate::elf::UserModeRuntime;
 use crate::linux_usermode::defs::{GenericStat, read32_advance_ptr, read64_advance_ptr};
@@ -47,7 +48,7 @@ pub struct RiscvInt {
     pub trap_pc: u64,
     // todo: no need for mutex, memsource is a per hart/cpu structure
     pub memsource: RiscVMem,
-    pub instr: HashMap<u64, Vec<RiscvBlock>>,
+    pub instr: FxHashMap<u64, Vec<RiscvBlock>>,
     pub trap: Option<Trap>,
     pub current_block: RiscvBlock,
     pub user_struct: UserModeRuntime,
@@ -318,10 +319,32 @@ impl RiscvInt {
                 self.stop_exec = true;
                 return Err(self.mem_trap(MemAccessType::Execute, curpc));
             };
+            /* 'outer: loop {
+                let retaddr = physpc >> RISCV_PAGE_SHIFT;
 
+                if let Some(zz) =  self.instr.get(&retaddr) {
+                    for i in zz {
+                        if i.begin == physpc {
+                            if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
+                                panic!(); // bug check
+                            }
+                            self.exec_block_inner(i);
+                            if self.stop_exec {
+                                return Ok(());
+                            }
+                            break 'outer;
+                        }
+                    }
+                }
+                // no "else" clause, because what if we found other in address space but no match?
+                self.build_exec(physpc);
+                continue;
+            }
+
+             */
             if let Some(blk) = self.check_block(physpc) {
                 // already exists
-                self.exec_block_inner(blk);
+                self.exec_block_inner(&blk);
                 if self.stop_exec {
                     return Ok(());
                 }
@@ -329,11 +352,13 @@ impl RiscvInt {
                 self.build_exec(physpc);
                 // unwrap cuz we already added it to block. If not there then something wrong;
                 let blk = self.check_block(physpc).unwrap();
-                self.exec_block_inner(blk);
+                self.exec_block_inner(&blk);
                 if self.stop_exec {
                     return Ok(());
                 }
             }
+
+
         }
     }
     fn build_exec(&mut self, addr: u64) -> Result<(), Trap> {
@@ -408,7 +433,7 @@ impl RiscvInt {
             }
         }
     }
-    fn exec_block_inner(&mut self, blk: RiscvBlock) {
+    fn exec_block_inner(&mut self, blk: &RiscvBlock) {
         self.stop_exec = false;
         for  z in &blk.instrs {
             self.is_compressed = if z.inc_by == 2 {

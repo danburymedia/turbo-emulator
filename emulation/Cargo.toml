@@ -22,3 +22,4 @@ num = "0.4.0"
 kernel_loader = {path = "../misc/kernel_loader"}
 setjmp = "0.1.4"
 lazy_static = "1.4.0"
+rustc-hash = { version="1.1" }

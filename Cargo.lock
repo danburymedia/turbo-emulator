@@ -432,6 +432,7 @@ dependencies = [
  "num",
  "packed_struct",
  "resources",
+ "rustc-hash",
  "setjmp",
  "simple-soft-float",
  "sync",

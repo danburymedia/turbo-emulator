@@ -1,4 +1,5 @@
 use std::ops::{BitAnd, BitOr, BitXor};
+use jit::main::JitBackend;
 use crate::common::memory::MemEndian;
 
 pub mod memory;
@@ -126,3 +127,12 @@ pub fn get_variable_guest_fmt_16(dst: u16, end: MemEndian) -> u16 {
     };
     useval
 }
+// passthrough struct between frontends and the jit (which uses thrad local storage)
+/*pub struct TLSJitVar {
+
+}
+impl JitBackend for TLSJitVar {
+
+}
+
+ */

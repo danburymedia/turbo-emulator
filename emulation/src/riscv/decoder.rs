@@ -2,686 +2,686 @@
 
 use jit::extract::*;
 use crate::riscv::common::RiscvArgs;
-
+// todo: convert to return false
 pub trait DecodeTrait {
-    fn ecall(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ebreak(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn uret(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sret(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mret(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn wfi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sfence_vma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sfence_vm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lui(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn auipc(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn jal(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn jalr(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn beq(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bne(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn blt(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bge(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bltu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bgeu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lb(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lbu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lhu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sb(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn addi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slti(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sltiu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn xori(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ori(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn andi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slli(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srli(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srai(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn add(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sub(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sll(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slt(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sltu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn xor(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srl(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sra(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn or(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn and(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn pause(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fence(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fence_i(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrc(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrwi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrsi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn csrrci(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lwu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ld(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn addiw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slliw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srliw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sraiw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn addw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn subw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sllw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srlw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sraw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ldu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lq(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sq(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn addid(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sllid(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srlid(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sraid(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn addd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn subd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slld(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srld(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn srad(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mul(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mulh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mulhsu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mulhu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn div(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn divu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rem(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn remu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn mulw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn divw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn divuw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn remw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn remuw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn muld(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn divd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn divud(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn remd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn remud(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lr_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sc_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoswap_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoadd_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoxor_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoand_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoor_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomin_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomax_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amominu_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomaxu_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn lr_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sc_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoswap_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoadd_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoxor_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoand_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amoor_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomin_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomax_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amominu_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn amomaxu_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn flw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmadd_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmsub_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmsub_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmadd_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fadd_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsub_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmul_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fdiv_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsqrt_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnj_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjn_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjx_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmin_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmax_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_w_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_wu_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_x_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn feq_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn flt_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fle_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fclass_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_wu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_w_x(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_l_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_lu_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_l(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_lu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fld(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsd(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmadd_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmsub_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmsub_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmadd_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fadd_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsub_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmul_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fdiv_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsqrt_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnj_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjn_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjx_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmin_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmax_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn feq_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn flt_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fle_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fclass_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_w_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_wu_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_wu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_l_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_lu_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_x_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_l(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_lu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_d_x(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_b(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_bu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_hu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlvx_hu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlvx_wu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hsv_b(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hsv_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hsv_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hfence_gvma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hfence_vvma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_wu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hlv_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hsv_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vse8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vse16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vse32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vse64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlm_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsm_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlse8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlse16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlse32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlse64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsse8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsse16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsse32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsse64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlxei8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlxei16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlxei32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vlxei64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsxei8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsxei16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsxei32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsxei64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle8ff_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle16ff_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle32ff_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vle64ff_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl1re8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl1re16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl1re32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl1re64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl2re8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl2re16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl2re32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl2re64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl4re8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl4re16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl4re32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl4re64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl8re8_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl8re16_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl8re32_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vl8re64_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vs1r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vs2r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vs4r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vs8r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadd_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadd_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrsub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrsub_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwaddu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwaddu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwadd_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsubu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsubu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwaddu_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwaddu_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwadd_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwadd_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsubu_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsubu_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsub_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwsub_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadc_vvm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadc_vxm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vadc_vim(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmadc_vvm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmadc_vxm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmadc_vim(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsbc_vvm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsbc_vxm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsbc_vvm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsbc_vxm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vand_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vand_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vand_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vor_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vor_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vor_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vxor_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vxor_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vxor_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsll_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsll_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsll_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsrl_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsrl_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsrl_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsra_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsra_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsra_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsrl_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsrl_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsrl_wi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsra_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsra_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnsra_wi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmseq_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmseq_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmseq_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsne_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsne_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsne_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsltu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsltu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmslt_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmslt_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsleu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsleu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsleu_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsle_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsle_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsle_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsgtu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsgtu_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsgt_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsgt_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vminu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vminu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmin_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmin_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmaxu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmaxu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmax_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmax_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmul_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmul_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulh_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulh_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulhu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulhu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulhsu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmulhsu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vdivu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vdivu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vdiv_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vdiv_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vremu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vremu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrem_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrem_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmulu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmulu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmulsu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmulsu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmul_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmul_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmacc_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnmsac_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnmsac_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmadd_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnmsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnmsub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmaccu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmaccu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmacc_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmaccsu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmaccsu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwmaccus_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv_v_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv_v_x(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv_v_i(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmerge_vvm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmerge_vxm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmerge_vim(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsaddu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsaddu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsaddu_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsadd_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsadd_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssubu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssubu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vaadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vaadd_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vaaddu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vaaddu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vasub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vasub_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vasubu_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vasubu_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsmul_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsmul_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssrl_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssrl_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssrl_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssra_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssra_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vssra_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclipu_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclipu_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclipu_wi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclip_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclip_wx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vnclip_wi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfadd_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsub_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfrsub_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwadd_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwadd_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwadd_wf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwsub_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwsub_wv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwsub_wf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmul_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmul_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfdiv_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfdiv_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfrdiv_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmul_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmul_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmacc_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmacc_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmsac_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmsac_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmsac_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmsac_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmadd_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmadd_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmadd_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmsub_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmsub_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfnmsub_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmacc_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwnmacc_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwnmacc_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmsac_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwmsac_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwnmsac_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwnmsac_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsqrt_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfrsqrt7_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfrec7_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmin_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmin_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmax_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmax_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnj_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnj_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnjn_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnjn_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnjx_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfsgnjx_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfslide1up_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfslide1down_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfeq_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfeq_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfne_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfne_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmflt_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmflt_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfle_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfle_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfgt_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmfge_vf(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfclass_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmerge_vfm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmv_v_f(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_xu_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_x_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_f_xu_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_f_x_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_rtz_xu_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfcvt_rtz_x_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_xu_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_x_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_f_xu_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_f_x_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_f_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_rtz_xu_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwcvt_rtz_x_f_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_xu_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_x_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_f_xu_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_f_x_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_f_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_rod_f_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_rtz_xu_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfncvt_rtz_x_f_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredsum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredand_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredor_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredxor_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredminu_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredmin_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredmaxu_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vredmax_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwredsumu_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vwredsum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfredusum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfredosum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfredmin_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfredmax_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwredusum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfwredosum_vs(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmand_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmnand_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmandn_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmxor_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmor_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmnor_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmorn_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmxnor_mm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vcpop_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfirst_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsbf_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsif_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmsof_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn viota_m(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vid_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv_x_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv_s_x(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmv_f_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vfmv_s_f(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslideup_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslideup_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslide1up_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslidedown_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslidedown_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vslide1down_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrgather_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrgatherei16_vv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrgather_vx(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vrgather_vi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vcompress_vm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv1r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv2r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv4r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vmv8r_v(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vzext_vf2(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vzext_vf4(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vzext_vf8(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsext_vf2(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsext_vf4(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsext_vf8(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsetvli(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsetivli(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn vsetvl(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh1add(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh2add(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh3add(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn add_uw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh1add_uw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh2add_uw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sh3add_uw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn slli_uw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn andn(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rol(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ror(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rori(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rev8_32(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn zext_h_32(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn pack(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn xnor(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn clz(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn cpop(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ctz(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn max(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn maxu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn min(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn minu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn orc_b(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn orn(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sext_b(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sext_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn brev8(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn packh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn unzip(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn zip(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rev8_64(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rolw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn roriw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn rorw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn zext_h_64(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn packw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn clzw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn ctzw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn cpopw(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn clmul(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn clmulh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn clmulr(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn xperm4(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn xperm8(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bclr(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bclri(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bext(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bexti(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn binv(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn binvi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bset(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn bseti(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn flh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsh(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmadd_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmsub_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmsub_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fnmadd_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fadd_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsub_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmul_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fdiv_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsqrt_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnj_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjn_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fsgnjx_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmin_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmax_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_s(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_s_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_d(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_d_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_w_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_wu_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_x_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn feq_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn flt_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fle_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fclass_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_w(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_wu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fmv_h_x(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_l_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_lu_h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_l(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn fcvt_h_lu(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sinval_vma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sfence_w_inval(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sfence_inval_ir(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hinval_vvma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn hinval_gvma(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes32dsmi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes32dsi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64dsm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64ds(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64im(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes32esmi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes32esi(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64es(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64esm(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64ks2(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn aes64ks1i(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha256sig0(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha256sig1(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha256sum0(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha256sum1(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sum0r(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sum1r(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig0l(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig0h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig1l(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig1h(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig0(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sig1(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sum0(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sha512sum1(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sm3p0(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sm3p1(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sm4ed(&mut self, args: RiscvArgs) -> bool { return false; }
-    fn sm4ks(&mut self, args: RiscvArgs) -> bool { return false; }
+    fn ecall(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ebreak(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn uret(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sret(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mret(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn wfi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sfence_vma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sfence_vm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lui(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn auipc(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn jal(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn jalr(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn beq(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bne(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn blt(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bge(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bltu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bgeu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lb(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lbu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lhu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sb(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn addi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slti(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sltiu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn xori(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ori(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn andi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slli(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srli(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srai(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn add(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sub(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sll(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slt(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sltu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn xor(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srl(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sra(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn or(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn and(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn pause(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fence(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fence_i(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrc(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrwi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrsi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn csrrci(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lwu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ld(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn addiw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slliw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srliw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sraiw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn addw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn subw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sllw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srlw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sraw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ldu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lq(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sq(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn addid(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sllid(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srlid(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sraid(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn addd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn subd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slld(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srld(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn srad(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mul(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mulh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mulhsu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mulhu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn div(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn divu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rem(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn remu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn mulw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn divw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn divuw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn remw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn remuw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn muld(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn divd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn divud(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn remd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn remud(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lr_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sc_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoswap_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoadd_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoxor_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoand_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoor_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomin_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomax_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amominu_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomaxu_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn lr_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sc_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoswap_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoadd_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoxor_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoand_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amoor_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomin_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomax_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amominu_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn amomaxu_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn flw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmadd_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmsub_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmsub_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmadd_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fadd_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsub_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmul_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fdiv_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsqrt_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnj_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjn_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjx_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmin_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmax_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_w_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_wu_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_x_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn feq_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn flt_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fle_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fclass_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_wu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_w_x(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_l_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_lu_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_l(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_lu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fld(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsd(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmadd_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmsub_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmsub_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmadd_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fadd_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsub_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmul_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fdiv_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsqrt_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnj_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjn_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjx_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmin_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmax_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn feq_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn flt_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fle_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fclass_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_w_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_wu_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_wu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_l_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_lu_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_x_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_l(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_lu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_d_x(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_b(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_bu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_hu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlvx_hu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlvx_wu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hsv_b(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hsv_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hsv_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hfence_gvma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hfence_vvma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_wu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hlv_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hsv_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vse8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vse16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vse32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vse64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlm_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsm_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlse8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlse16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlse32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlse64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsse8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsse16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsse32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsse64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlxei8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlxei16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlxei32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vlxei64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsxei8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsxei16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsxei32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsxei64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle8ff_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle16ff_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle32ff_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vle64ff_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl1re8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl1re16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl1re32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl1re64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl2re8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl2re16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl2re32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl2re64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl4re8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl4re16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl4re32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl4re64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl8re8_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl8re16_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl8re32_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vl8re64_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vs1r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vs2r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vs4r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vs8r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadd_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadd_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrsub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrsub_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwaddu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwaddu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwadd_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsubu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsubu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwaddu_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwaddu_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwadd_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwadd_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsubu_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsubu_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsub_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwsub_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadc_vvm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadc_vxm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vadc_vim(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmadc_vvm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmadc_vxm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmadc_vim(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsbc_vvm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsbc_vxm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsbc_vvm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsbc_vxm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vand_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vand_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vand_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vor_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vor_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vor_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vxor_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vxor_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vxor_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsll_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsll_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsll_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsrl_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsrl_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsrl_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsra_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsra_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsra_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsrl_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsrl_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsrl_wi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsra_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsra_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnsra_wi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmseq_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmseq_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmseq_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsne_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsne_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsne_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsltu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsltu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmslt_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmslt_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsleu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsleu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsleu_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsle_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsle_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsle_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsgtu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsgtu_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsgt_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsgt_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vminu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vminu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmin_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmin_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmaxu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmaxu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmax_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmax_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmul_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmul_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulh_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulh_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulhu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulhu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulhsu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmulhsu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vdivu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vdivu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vdiv_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vdiv_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vremu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vremu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrem_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrem_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmulu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmulu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmulsu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmulsu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmul_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmul_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmacc_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnmsac_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnmsac_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmadd_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnmsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnmsub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmaccu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmaccu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmacc_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmaccsu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmaccsu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwmaccus_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv_v_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv_v_x(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv_v_i(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmerge_vvm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmerge_vxm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmerge_vim(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsaddu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsaddu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsaddu_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsadd_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsadd_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssubu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssubu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vaadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vaadd_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vaaddu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vaaddu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vasub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vasub_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vasubu_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vasubu_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsmul_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsmul_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssrl_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssrl_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssrl_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssra_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssra_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vssra_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclipu_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclipu_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclipu_wi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclip_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclip_wx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vnclip_wi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfadd_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsub_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfrsub_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwadd_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwadd_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwadd_wf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwsub_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwsub_wv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwsub_wf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmul_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmul_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfdiv_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfdiv_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfrdiv_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmul_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmul_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmacc_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmacc_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmsac_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmsac_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmsac_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmsac_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmadd_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmadd_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmadd_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmsub_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmsub_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfnmsub_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmacc_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwnmacc_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwnmacc_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmsac_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwmsac_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwnmsac_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwnmsac_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsqrt_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfrsqrt7_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfrec7_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmin_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmin_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmax_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmax_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnj_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnj_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnjn_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnjn_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnjx_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfsgnjx_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfslide1up_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfslide1down_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfeq_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfeq_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfne_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfne_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmflt_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmflt_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfle_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfle_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfgt_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmfge_vf(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfclass_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmerge_vfm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmv_v_f(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_xu_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_x_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_f_xu_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_f_x_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_rtz_xu_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfcvt_rtz_x_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_xu_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_x_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_f_xu_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_f_x_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_f_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_rtz_xu_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwcvt_rtz_x_f_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_xu_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_x_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_f_xu_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_f_x_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_f_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_rod_f_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_rtz_xu_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfncvt_rtz_x_f_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredsum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredand_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredor_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredxor_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredminu_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredmin_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredmaxu_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vredmax_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwredsumu_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vwredsum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfredusum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfredosum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfredmin_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfredmax_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwredusum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfwredosum_vs(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmand_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmnand_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmandn_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmxor_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmor_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmnor_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmorn_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmxnor_mm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vcpop_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfirst_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsbf_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsif_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmsof_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn viota_m(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vid_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv_x_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv_s_x(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmv_f_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vfmv_s_f(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslideup_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslideup_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslide1up_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslidedown_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslidedown_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vslide1down_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrgather_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrgatherei16_vv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrgather_vx(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vrgather_vi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vcompress_vm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv1r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv2r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv4r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vmv8r_v(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vzext_vf2(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vzext_vf4(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vzext_vf8(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsext_vf2(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsext_vf4(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsext_vf8(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsetvli(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsetivli(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn vsetvl(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh1add(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh2add(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh3add(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn add_uw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh1add_uw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh2add_uw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sh3add_uw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn slli_uw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn andn(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rol(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ror(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rori(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rev8_32(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn zext_h_32(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn pack(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn xnor(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn clz(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn cpop(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ctz(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn max(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn maxu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn min(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn minu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn orc_b(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn orn(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sext_b(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sext_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn brev8(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn packh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn unzip(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn zip(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rev8_64(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rolw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn roriw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn rorw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn zext_h_64(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn packw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn clzw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn ctzw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn cpopw(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn clmul(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn clmulh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn clmulr(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn xperm4(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn xperm8(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bclr(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bclri(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bext(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bexti(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn binv(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn binvi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bset(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn bseti(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn flh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsh(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmadd_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmsub_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmsub_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fnmadd_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fadd_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsub_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmul_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fdiv_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsqrt_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnj_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjn_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fsgnjx_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmin_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmax_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_s(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_s_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_d(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_d_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_w_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_wu_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_x_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn feq_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn flt_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fle_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fclass_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_w(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_wu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fmv_h_x(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_l_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_lu_h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_l(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn fcvt_h_lu(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sinval_vma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sfence_w_inval(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sfence_inval_ir(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hinval_vvma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn hinval_gvma(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes32dsmi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes32dsi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64dsm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64ds(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64im(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes32esmi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes32esi(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64es(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64esm(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64ks2(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn aes64ks1i(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha256sig0(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha256sig1(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha256sum0(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha256sum1(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sum0r(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sum1r(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig0l(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig0h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig1l(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig1h(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig0(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sig1(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sum0(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sha512sum1(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sm3p0(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sm3p1(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sm4ed(&mut self, args: RiscvArgs) -> bool { panic!(); }
+    fn sm4ks(&mut self, args: RiscvArgs) -> bool { panic!(); }
 }
 
 fn decode_extract_atom_ld<T: DecodeTrait>(ctx: &T, a: &mut RiscvArgs, insn: u32)
@@ -5238,5 +5238,5 @@ pub fn decode<T: DecodeTrait>(transimpl: &mut T, insn: u32) -> bool
         },
         _ => { },
     };
-    return false;
+    panic!();
 }

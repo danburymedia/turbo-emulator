@@ -102,6 +102,15 @@ pub fn lr_w(ri: &mut RiscvInt, args: &RiscvArgs) {
         ri.regs[args.rd as usize] = data as i32 as i64 as u64;
     }
 }
+pub fn lr_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let addr = ri.regs[args.rs1 as usize];
+    if let Ok(data) = ri.read64(addr, false, true) {
+        ri.is_reservation = true;
+        ri.res_len = 8;
+        ri.res_val = addr;
+        ri.regs[args.rd as usize] = data as i64 as u64;
+    }
+}
 pub fn amoswap_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     // todo: actually do correctly with atomptr
     let addr = ri.regs[args.rs1 as usize];
