@@ -2218,4 +2218,16 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn amoadd_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amoadd_d
+            });
+        } else {
+            interpreter::defs::amoadd_d(self, &args);
+        }
+        return true;
+    }
 }
