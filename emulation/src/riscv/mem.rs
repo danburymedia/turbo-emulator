@@ -495,20 +495,24 @@ impl RiscvInt {
             }
         }
     }
+
     pub fn deal_with_cache(&mut self, addr: u64) {
         let hashaddr = addr >> RISCV_PAGE_SHIFT;
         let hashaddr1 = hashaddr + 1; // we can technically write to two pages
         // todo: make if statment to see if we actually are
         // todo: refactor write functions once we use virtual mem. We need to anyway
-        if self.instr.contains_key(&hashaddr) {
-            // we wrote to that page, so remove from cache and stop exec.
-            // outer loop is noop if nothing else is set, we will restart from exec block
-            // we could also page fault,
-            // what matters is outer loop return guaranteed + cache invalid is done
-            self.stop_exec = true;
-            self.instr.remove(&hashaddr);
-            self.instr.remove(&hashaddr1);
+        unsafe {
 
+            if (*self.instr.get().as_mut().unwrap()).contains_key(&hashaddr) {
+                // we wrote to that page, so remove from cache and stop exec.
+                // outer loop is noop if nothing else is set, we will restart from exec block
+                // we could also page fault,
+                // what matters is outer loop return guaranteed + cache invalid is done
+                self.stop_exec = true;
+                (*self.instr.get().as_mut().unwrap()).remove(&hashaddr);
+                (*self.instr.get().as_mut().unwrap()).remove(&hashaddr1);
+
+            }
         }
     }
     pub fn readn(&mut self, addr: u64, size: u64, is_exec: bool, set_trap: bool) -> Result<Vec<u8>, Trap> {

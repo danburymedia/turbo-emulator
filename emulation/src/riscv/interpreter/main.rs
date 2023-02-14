@@ -1,3 +1,4 @@
+use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::sync::{Arc};
 use libc::sysinfo;
@@ -48,7 +49,7 @@ pub struct RiscvInt {
     pub trap_pc: u64,
     // todo: no need for mutex, memsource is a per hart/cpu structure
     pub memsource: RiscVMem,
-    pub instr: FxHashMap<u64, Vec<RiscvBlock>>,
+    pub instr: UnsafeCell<FxHashMap<u64, Vec<RiscvBlock>>>,
     pub trap: Option<Trap>,
     pub current_block: RiscvBlock,
     pub user_struct: UserModeRuntime,
@@ -342,7 +343,19 @@ impl RiscvInt {
             }
 
              */
-            if let Some(blk) = self.check_block(physpc) {
+            unsafe {
+                if self.check_run_block(physpc) {
+                    self.build_exec(physpc).unwrap();
+                    if self.check_run_block(physpc) {
+                        panic!();
+                    }
+                }
+                if self.stop_exec {
+                    return Ok(());
+                }
+
+            }
+            /*if let Some(blk) = self.check_block(physpc) {
                 // already exists
                 self.exec_block_inner(&blk);
                 if self.stop_exec {
@@ -357,6 +370,8 @@ impl RiscvInt {
                     return Ok(());
                 }
             }
+
+             */
 
 
         }
@@ -406,32 +421,58 @@ impl RiscvInt {
         }
         self.current_block.end = iaddr - inc_by; // end would be the last pc the block world cover
         let hashaddr = addr >> RISCV_PAGE_SHIFT;
-        if let Some(s) = self.instr.get_mut(&hashaddr) {
-            s.push(self.current_block.clone());
-        } else {
-            let mut v: Vec<RiscvBlock> = Vec::new();
-            v.push(self.current_block.clone());
-            self.instr.insert(hashaddr, v);
+        unsafe {
+            if let Some(s) = (*self.instr.get()).get_mut(&hashaddr) {
+                s.push(self.current_block.clone());
+            } else {
+                let mut v: Vec<RiscvBlock> = Vec::new();
+                v.push(self.current_block.clone());
+                (*self.instr.get()).insert(hashaddr, v);
+            }
         }
         Ok(())
     }
-    fn check_block(&mut self, addr: u64) -> Option<RiscvBlock> {
+    unsafe fn check_run_block(&mut self, addr: u64) -> bool {
         // block if there, None if otherwise
         let retaddr = addr >> RISCV_PAGE_SHIFT;
-        match self.instr.get(&retaddr) {
-            None => None,
+        match (*self.instr.get()).get(&retaddr) {
+            None => {
+                return true;
+            },
             Some(z) => {
                 for i in z {
                     if i.begin == addr {
                         if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
                             panic!(); // bug check
                         }
-                        return Some(i.clone());
+                        self.exec_block_inner(i);
+                        return false;
                     }
                 }
-                return None;
+                return true;
             }
         }
+    }
+    fn check_block(&mut self, addr: u64) -> Option<RiscvBlock> {
+        // block if there, None if otherwise
+        let retaddr = addr >> RISCV_PAGE_SHIFT;
+        unsafe {
+            match (*self.instr.get()).get(&retaddr) {
+                None => None,
+                Some(z) => {
+                    for i in z {
+                        if i.begin == addr {
+                            if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
+                                panic!(); // bug check
+                            }
+                            return Some(i.clone());
+                        }
+                    }
+                    return None;
+                }
+            }
+        }
+
     }
     fn exec_block_inner(&mut self, blk: &RiscvBlock) {
         self.stop_exec = false;
