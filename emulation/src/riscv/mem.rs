@@ -502,16 +502,18 @@ impl RiscvInt {
         // todo: make if statment to see if we actually are
         // todo: refactor write functions once we use virtual mem. We need to anyway
         unsafe {
-
-            if (*self.instr.get().as_mut().unwrap()).contains_key(&hashaddr) {
-                // we wrote to that page, so remove from cache and stop exec.
-                // outer loop is noop if nothing else is set, we will restart from exec block
-                // we could also page fault,
-                // what matters is outer loop return guaranteed + cache invalid is done
-                self.stop_exec = true;
-                (*self.instr.get().as_mut().unwrap()).remove(&hashaddr);
-                (*self.instr.get().as_mut().unwrap()).remove(&hashaddr1);
-
+            for i in (*self.ainstr.get()).ainstr.iter_mut() {
+                let addr = i.begin >> RISCV_PAGE_SHIFT;
+                if addr == hashaddr || addr == hashaddr1 {
+                    // we wrote to that page, so remove from cache and stop exec.
+                    // outer loop is noop if nothing else is set, we will restart from exec block
+                    // we could also page fault,
+                    // what matters is outer loop return guaranteed + cache invalid is done
+                    self.stop_exec = true;
+                    i.begin = 0;
+                    i.end = 0;
+                    i.instrs.clear();
+                }
             }
         }
     }

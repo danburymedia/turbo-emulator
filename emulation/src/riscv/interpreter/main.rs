@@ -35,10 +35,16 @@ pub enum ExitReason {
 }
 #[derive(Clone, Default)]
 pub struct RiscvBlock {
-    begin: u64,
-    end: u64,
-    instrs: Vec<RiscvInstr>
+    pub begin: u64, // for invalid, set to zero
+    pub end: u64,
+    pub instrs: Vec<RiscvInstr>
 }
+#[derive(Default)]
+pub struct RiscvBlockCollection {
+    pub ainstr: [RiscvBlock; 5],
+    pub idx: usize,
+}
+
 pub struct RiscvInt {
     pub regs: [u64; 32], // registeres can be smaller than this, but we do biggest for somplicity,
     pub fregs: [u64; 32],
@@ -49,7 +55,8 @@ pub struct RiscvInt {
     pub trap_pc: u64,
     // todo: no need for mutex, memsource is a per hart/cpu structure
     pub memsource: RiscVMem,
-    pub instr: UnsafeCell<FxHashMap<u64, Vec<RiscvBlock>>>,
+    pub ainstr: UnsafeCell<RiscvBlockCollection>,
+   // pub instr: UnsafeCell<FxHashMap<u64, Vec<RiscvBlock>>>,
     pub trap: Option<Trap>,
     pub current_block: RiscvBlock,
     pub user_struct: UserModeRuntime,
@@ -83,7 +90,7 @@ impl RiscvInt {
             xlen,
             csr: [0; 4096],
             memsource: RiscVMem::new_system(xlen, vm_mem),
-            instr: Default::default(),
+            ainstr: Default::default(),
             trap: None,
             current_block: RiscvBlock::default(),
             changed_pc: false,
@@ -110,7 +117,7 @@ impl RiscvInt {
             trap_pc: 0,
             csr: [0; 4096],
             memsource: RiscVMem::new_usermode(xlen),
-            instr: Default::default(),
+            ainstr: Default::default(),
             trap: None,
             current_block: RiscvBlock::default(),
             changed_pc: false,
@@ -420,59 +427,26 @@ impl RiscvInt {
 
         }
         self.current_block.end = iaddr - inc_by; // end would be the last pc the block world cover
-        let hashaddr = addr >> RISCV_PAGE_SHIFT;
         unsafe {
-            if let Some(s) = (*self.instr.get()).get_mut(&hashaddr) {
-                s.push(self.current_block.clone());
-            } else {
-                let mut v: Vec<RiscvBlock> = Vec::new();
-                v.push(self.current_block.clone());
-                (*self.instr.get()).insert(hashaddr, v);
-            }
+            let z = (self.ainstr.get());
+            let newidx = ((*z).idx + 1) % (*z).ainstr.len();
+            (*z).ainstr[newidx] = self.current_block.clone(); // should be z.idx
+            (*z).idx = newidx;
         }
         Ok(())
     }
     unsafe fn check_run_block(&mut self, addr: u64) -> bool {
         // block if there, None if otherwise
-        let retaddr = addr >> RISCV_PAGE_SHIFT;
-        match (*self.instr.get()).get(&retaddr) {
-            None => {
-                return true;
-            },
-            Some(z) => {
-                for i in z {
-                    if i.begin == addr {
-                        if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
-                            panic!(); // bug check
-                        }
-                        self.exec_block_inner(i);
-                        return false;
-                    }
+        for i in (*self.ainstr.get()).ainstr.iter() {
+            if i.begin == addr {
+                if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
+                    panic!(); // bug check
                 }
-                return true;
+                self.exec_block_inner(i);
+                return false;
             }
         }
-    }
-    fn check_block(&mut self, addr: u64) -> Option<RiscvBlock> {
-        // block if there, None if otherwise
-        let retaddr = addr >> RISCV_PAGE_SHIFT;
-        unsafe {
-            match (*self.instr.get()).get(&retaddr) {
-                None => None,
-                Some(z) => {
-                    for i in z {
-                        if i.begin == addr {
-                            if (i.begin & !RISCV_PAGE_OFFSET) ^ (i.end & !RISCV_PAGE_OFFSET) != 0 {
-                                panic!(); // bug check
-                            }
-                            return Some(i.clone());
-                        }
-                    }
-                    return None;
-                }
-            }
-        }
-
+        return true;
     }
     fn exec_block_inner(&mut self, blk: &RiscvBlock) {
         self.stop_exec = false;
