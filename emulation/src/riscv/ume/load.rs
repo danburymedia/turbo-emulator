@@ -202,7 +202,7 @@ pub fn init_riscv_ume(ume: UserModeRuntime, ef: &Elf) {
     map_stack(&mut riscvcpu);
     init_stack(&mut riscvcpu, ef);
     riscvcpu.pc = riscvcpu.user_struct.initvars.lock().real_entry_point;
-    riscvcpu.cache_enabled = true;
+    riscvcpu.cache_enabled = false;
     riscvcpu.run();
     // anything below run() should not happen.
     unreachable!("riscv processor error")
