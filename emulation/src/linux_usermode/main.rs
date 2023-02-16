@@ -92,6 +92,7 @@ pub enum SyscallType {
     Futex,
     Gettid,
     Getaffinity,
+    Sigaltstack,
 }
 #[derive(Copy, Clone, PartialEq)]
 pub struct SyscallIn {
@@ -1354,7 +1355,7 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
             // Just keep track of which ones the guest program doesn't want
             SyscallOut::default()
         }
-        SyscallType::Sigaction  => {
+        SyscallType::Sigaction | SyscallType::Sigaltstack  => {
             // nop for now
             /*SINFO.with(|z| {
                 let mut k = z.borrow_mut();

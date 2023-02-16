@@ -351,6 +351,8 @@ pub fn arm64_translate_syscall(val: u32) -> Option<SyscallType> {
         ARM64_SYS_GETTID => Some(SyscallType::Gettid),
         ARM64_SYS_GETPID => Some(SyscallType::Getpid),
         ARM64_SYS_GETRLIMIT => Some(SyscallType::Getrlimit),
+        ARM64_SYS_SIGALTSTACK => Some(SyscallType::Sigaltstack),
+        ARM64_SYS_SCHED_GETAFFINITY => Some(SyscallType::Getaffinity),
         _ => None
     }
 }

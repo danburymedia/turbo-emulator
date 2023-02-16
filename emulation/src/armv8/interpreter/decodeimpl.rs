@@ -746,4 +746,8 @@ impl Arm64DecodeTrait for Arm64Cpu {
         defs::prfm_imm(self, &args);
         return true;
     }
+    fn ldur_fpsimd(&mut self, args: ArmInstr) -> bool {
+        defs::ldur_fpsimd(self, &args);
+        return true;
+    }
 }

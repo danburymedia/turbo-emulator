@@ -1178,3 +1178,25 @@ pub fn st1_advsimd_mult(ai: &mut Arm64Cpu, args: &ArmInstr) {
     };
     load_store_multi_gen(ai, args, LoadStoreSIMDMultiTypes::St1(size), postidx);
 }
+pub fn ldur_fpsimd(ai: &mut Arm64Cpu, arg: &ArmInstr) {
+    let scale_exbit = ((arg.insn >> 23) & 1) as u64;
+    let scale = arg.get_ls_size() | scale_exbit << 2;
+    let size = if scale == 0b011 {
+        64
+    } else if scale == 0b010 {
+        32
+    } else if scale == 0b001 {
+        16
+    } else if scale == 0b100 {
+        128
+    } else if scale == 0 {
+        8
+    } else {
+        panic!();
+    };
+    let imm9 = (arg.insn >> 12) & 0b111_111_111;
+    let offset = signext_arbpos(imm9 as u64, 9);
+    load_store_simd_helper(ai, arg, offset, false,
+                           MemAccessStr::std_loadstore(), false,
+                           size, false);
+}
