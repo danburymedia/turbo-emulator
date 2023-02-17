@@ -750,4 +750,8 @@ impl Arm64DecodeTrait for Arm64Cpu {
         defs::ldur_fpsimd(self, &args);
         return true;
     }
+    fn isb(&mut self, args: ArmInstr) -> bool {
+        defs::isb(self, &args);
+        return true;
+    }
 }
