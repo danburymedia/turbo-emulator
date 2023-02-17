@@ -354,13 +354,19 @@ pub fn u_statx(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let flags = sysin.args[2];
     let mask = sysin.args[3];
     let statsbux = sysin.args[4];
-    let newpath = CString::new(
-        fix_path(umr.str_path.as_str(), path as *const c_char)
-    ).unwrap();
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if path != 0 {
+        newpath = CString::new(
+            fix_path(umr.str_path.as_str(), path as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
     let mut sout: SyscallOut = Default::default();
     let res = unsafe {
         libc::statx(dirfd as c_int,
-                    newpath.as_ptr(), flags as c_int, mask as c_uint,
+                    finalptr, flags as c_int, mask as c_uint,
                     statsbux as *mut statx)
     };
     generic_error_handle(&mut sout, res);

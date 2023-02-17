@@ -228,13 +228,7 @@ pub fn fdiv_s(ri: &mut RiscvInt, args: &RiscvArgs) {
 
 }
 pub fn fadd_d(ri: &mut RiscvInt, args: &RiscvArgs) {
-
-    let flt1 = read_float64(ri, args.rs1 as usize);
-    let flt2 = read_float64(ri, args.rs2 as usize);
-    let (res, state) = f64_add(F64::from_bits(flt1), F64::from_bits(flt2), insn_2_rm_with_csr(ri, args.rm));
-    write_float64(ri, res.into_bits(), args.rd as usize);
-    fps_2_fflags(ri, state);
-
+    float64_gen_arith(ri, args, FloatingOps::Add);
 }
 pub fn fmul_d(ri: &mut RiscvInt, args: &RiscvArgs) {
     float64_gen_arith(ri, args, FloatingOps::Mul);
@@ -455,4 +449,20 @@ pub fn fcvt_s_wu(ri: &mut RiscvInt, args: &RiscvArgs) {
 pub fn fmv_w_x(ri: &mut RiscvInt, args: &RiscvArgs) {
     write_float32(ri, ri.regs[args.rs1 as usize] as u32, args.rd as usize);
 
+}
+pub fn fcvt_d_lu(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+    let fs1 = F64::from_u64(ri.regs[args.rs1 as usize],
+                            insn_2_rm_with_csr(ri, args.rm),
+                            Some(&mut fpstate));
+    write_float64(ri, fs1.into_bits(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
+}
+pub fn fcvt_d_wu(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+    let fs1 = F64::from_u32(ri.regs[args.rs1 as usize] as u32,
+                            insn_2_rm_with_csr(ri, args.rm),
+                            Some(&mut fpstate));
+    write_float64(ri, fs1.into_bits(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
 }

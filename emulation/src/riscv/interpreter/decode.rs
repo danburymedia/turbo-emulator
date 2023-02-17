@@ -2230,4 +2230,64 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn amoadd_w(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amoadd_w
+            });
+        } else {
+            interpreter::defs::amoadd_w(self, &args);
+        }
+        return true;
+    }
+    fn amoor_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amoor_d
+            });
+        } else {
+            interpreter::defs::amoor_d(self, &args);
+        }
+        return true;
+    }
+    fn fcvt_d_lu(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_d_lu
+            });
+        } else {
+            interpreter::defs::fcvt_d_lu(self, &args);
+        }
+        return true;
+    }
+    fn fcvt_d_wu(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_d_wu
+            });
+        } else {
+            interpreter::defs::fcvt_d_wu(self, &args);
+        }
+        return true;
+    }
+    fn fadd_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fadd_d
+            });
+        } else {
+            interpreter::defs::fadd_d(self, &args);
+        }
+        return true;
+    }
 }

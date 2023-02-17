@@ -13,21 +13,26 @@ pub enum AtomicOps {
     Max,
     Min
 }
-
 fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
-    todo!(); // Implentation may seem obvious, but I am wary of putting code I can't test
-    let dat1 = match ri.read32(ri.regs[gg.rs1 as usize], false, true) {
+    /*
+    todo: to make true atomic, here is an idea
+     first, load value, then do op, then write only if mem value matches original.
+     if it doesn't, restart process with new value, or report failure
+
+     */
+    let addr = ri.regs[gg.rs1 as usize];
+    let dat1 = match ri.read32(addr, false, true) {
         Err(z) => {
             return;
         },
         Ok(res) => {
-            res as i32 as i64
+            res
         }
-    } as u32;
+    };
     let dat2 = ri.regs[gg.rs2 as usize] as u32;
     let res = match op {
         AtomicOps::Swap => {
-            ri.regs[gg.rs2 as usize] as u32
+            dat2
         }
         AtomicOps::Add => {
             dat1.wrapping_add(dat2)
@@ -55,6 +60,13 @@ fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
             }
         }
     };
+    match ri.write32(addr, res, true) {
+        Err(_) => {
+            return;
+        },
+        Ok(_) => { }
+    };
+    ri.regs[gg.rd as usize] = ri.sign_ext(dat1 as u64);
 }
 fn gen_atomic_64(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
     /*
@@ -91,13 +103,13 @@ fn gen_atomic_64(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
 
         }
         AtomicOps::Max => {
-            match dat2 as u32 >= dat1 as u32 {
+            match dat2 >= dat1 {
                 true => dat2,
                 false => dat1
             }
         }
         AtomicOps::Min => {
-            match dat2 as u32 >= dat1 as u32 {
+            match dat2 >= dat1 {
                 true => dat1,
                 false => dat2
             }
@@ -113,6 +125,12 @@ fn gen_atomic_64(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
 }
 pub fn amoadd_d(ri: &mut RiscvInt, args: &RiscvArgs) {
     gen_atomic_64(ri, AtomicOps::Add, args);
+}
+pub fn amoor_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_64(ri, AtomicOps::Or, args);
+}
+pub fn amoadd_w(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_32(ri, AtomicOps::Add, args);
 }
 pub fn sc_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     let addr = ri.regs[args.rs1 as usize];

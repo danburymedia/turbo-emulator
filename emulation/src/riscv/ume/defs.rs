@@ -483,6 +483,7 @@ pub fn riscv_translate_syscall(val: u16) -> Option<SyscallType> {
         RISCV_SYS_SET_ROBUST_LIST => Some(SyscallType::SetRobustList),
         RISCV_SYS_PRLIMIT64 => Some(SyscallType::Prlimit64),
         RISCV_SYS_SCHED_GETAFFINITY => Some(SyscallType::Getaffinity),
+        RISCV_SYS_STATX => Some(SyscallType::Statx),
         _ => None
     }
 
