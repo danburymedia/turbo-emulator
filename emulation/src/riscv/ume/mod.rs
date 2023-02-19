@@ -1,7 +1,7 @@
 use std::os::unix::thread::JoinHandleExt;
 use std::sync::Arc;
 use base::{EventFd, get_blocked_signals, gettid};
-use libc::{CLONE_CHILD_CLEARTID, CLONE_CHILD_SETTID, CLONE_PARENT_SETTID, CLONE_SETTLS, sysinfo};
+use libc::{CLONE_CHILD_CLEARTID, CLONE_CHILD_SETTID, CLONE_PARENT_SETTID, CLONE_SETTLS, fork, getpid, sysinfo, vfork};
 use sync::Mutex;
 use crate::common::memory::MemEndian;
 use crate::elf::UserModeRuntime;
@@ -126,5 +126,43 @@ impl UsermodeCpu for RiscvInt {
         }
         set_mask_block(ss_old);
         return sout;
+    }
+
+    fn fork_proc(&mut self, sysin: SyscallIn) -> SyscallOut {
+        let flags = sysin.args[0] as i32;
+        let stack_addr = sysin.args[1];
+        let parent_tid_addr = sysin.args[2];
+        let child_tid_addr = sysin.args[4];
+
+        let pid = unsafe {
+            fork()
+        };
+        if pid == 0 {
+            let pid = unsafe {
+                getpid()
+            } as u32;
+            self.user_struct.tid_val = gettid() as u64;
+            if stack_addr != 0 {
+                self.regs[RISCV_STACKPOINTER_REG] = stack_addr;
+            }
+            if flags & CLONE_CHILD_SETTID != 0 {
+                self.write32(child_tid_addr, pid, false).unwrap();
+            }
+            if flags & CLONE_CHILD_CLEARTID != 0 {
+                self.user_struct.ctid_val = child_tid_addr;
+                // panic!();
+            }
+           // panic!();
+            let mut sout: SyscallOut = Default::default();
+            sout.ret1 = 0 as u64;
+            return sout;
+            // child
+        }
+        let mut sout: SyscallOut = Default::default();
+        sout.ret1 = pid as u64;
+        return sout;
+
+
+
     }
 }

@@ -2350,4 +2350,52 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn amomaxu_w(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amomaxu_w
+            });
+        } else {
+            interpreter::defs::amomaxu_w(self, &args);
+        }
+        return true;
+    }
+    fn amomaxu_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amomaxu_d
+            });
+        } else {
+            interpreter::defs::amomaxu_d(self, &args);
+        }
+        return true;
+    }
+    fn fcvt_d_l(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_d_l
+            });
+        } else {
+            interpreter::defs::fcvt_d_l(self, &args);
+        }
+        return true;
+    }
+    fn fcvt_s_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_s_d
+            });
+        } else {
+            interpreter::defs::fcvt_s_d(self, &args);
+        }
+        return true;
+    }
 }

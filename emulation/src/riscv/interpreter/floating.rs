@@ -2,7 +2,7 @@ use std::cmp::Ordering;
 use num::ToPrimitive;
 use crate::riscv::common::{Xlen, RiscvArgs};
 use crate::riscv::interpreter::main::{ExtensionSearchMode, RiscvInt};
-use simple_soft_float::{F32, F32Traits, F64, Float, FloatBitsType, FloatClass, FloatTraits, FPState, RoundingMode, Sign, StatusFlags};
+use simple_soft_float::{F32, F32Traits, F64, F64Traits, Float, FloatBitsType, FloatClass, FloatTraits, FPState, RoundingMode, Sign, StatusFlags};
 use crate::common::floating_wrappers::*;
 use crate::riscv::interpreter::consts::*;
 use crate::riscv::interpreter::defs::sign_ext_imm;
@@ -347,6 +347,14 @@ pub fn fcvt_w_s(ri: &mut RiscvInt, args: &RiscvArgs) {
     ri.regs[args.rd as usize] = val as i32 as i64 as u64;
     fps_2_fflags(ri, fpstate);
 }
+pub fn fcvt_s_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+
+    let fs1 = F64::from_bits(read_float64(ri, args.rs1 as usize));
+    let f32val = F32::convert_from_float::<F64Traits>(&fs1, insn_2_rm_with_csr(ri, args.rm), Some(&mut fpstate));
+    write_float32(ri, f32val.into_bits().to_u32().unwrap(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
+}
 pub fn fcvt_d_s(ri: &mut RiscvInt, args: &RiscvArgs) {
     let mut fpstate: FPState = Default::default();
 
@@ -457,6 +465,14 @@ pub fn fmv_w_x(ri: &mut RiscvInt, args: &RiscvArgs) {
 pub fn fcvt_d_lu(ri: &mut RiscvInt, args: &RiscvArgs) {
     let mut fpstate: FPState = Default::default();
     let fs1 = F64::from_u64(ri.regs[args.rs1 as usize],
+                            insn_2_rm_with_csr(ri, args.rm),
+                            Some(&mut fpstate));
+    write_float64(ri, fs1.into_bits(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
+}
+pub fn fcvt_d_l(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+    let fs1 = F64::from_i64(ri.regs[args.rs1 as usize] as i64,
                             insn_2_rm_with_csr(ri, args.rm),
                             Some(&mut fpstate));
     write_float64(ri, fs1.into_bits(), args.rd as usize);

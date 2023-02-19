@@ -260,4 +260,8 @@ impl UsermodeCpu for Arm64Cpu {
     fn clone_thread(&mut self, sysin: SyscallIn) -> SyscallOut {
         todo!()
     }
+
+    fn fork_proc(&mut self, sysin: SyscallIn) -> SyscallOut {
+        todo!()
+    }
 }

@@ -11,7 +11,9 @@ pub enum AtomicOps {
     Or,
     Xor,
     Max,
-    Min
+    MaxS,
+    Min,
+    MinS
 }
 fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
     if !ri.usermode {
@@ -41,6 +43,12 @@ fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
                     dat1 ^ dat2
 
                 }
+                AtomicOps::MaxS => {
+                    match (dat2 as i32) >= (dat1 as i32) {
+                        true => dat2,
+                        false => dat1
+                    }
+                }
                 AtomicOps::Max => {
                     match dat2 >= dat1 {
                         true => dat2,
@@ -49,6 +57,12 @@ fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
                 }
                 AtomicOps::Min => {
                     match dat2 >= dat1 {
+                        true => dat1,
+                        false => dat2
+                    }
+                }
+                AtomicOps::MinS => {
+                    match (dat2 as i32) >= (dat1 as i32) {
                         true => dat1,
                         false => dat2
                     }
@@ -103,8 +117,20 @@ fn gen_atomic_64(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
                         false => dat1
                     }
                 }
+                AtomicOps::MaxS => {
+                    match (dat2 as i64) >= (dat1 as i64) {
+                        true => dat2,
+                        false => dat1
+                    }
+                }
                 AtomicOps::Min => {
                     match dat2 >= dat1 {
+                        true => dat1,
+                        false => dat2
+                    }
+                }
+                AtomicOps::MinS => {
+                    match (dat2 as i64) >= (dat1 as i64) {
                         true => dat1,
                         false => dat2
                     }
@@ -139,6 +165,12 @@ pub fn amoadd_w(ri: &mut RiscvInt, args: &RiscvArgs) {
 }
 pub fn amoor_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     gen_atomic_32(ri, AtomicOps::Or, args);
+}
+pub fn amomaxu_w(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_32(ri, AtomicOps::Max, args);
+}
+pub fn amomaxu_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_64(ri, AtomicOps::Max, args);
 }
 
 pub fn sc_w(ri: &mut RiscvInt, args: &RiscvArgs) {

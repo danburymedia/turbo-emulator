@@ -491,6 +491,22 @@ pub fn riscv_translate_syscall(val: u16) -> Option<SyscallType> {
         RISCV_SYS_MADVISE => Some(SyscallType::Madvise),
         RISCV_SYS_EXIT => Some(SyscallType::Exit),
         RISCV_SYS_FUTEX => Some(SyscallType::Futex),
+        RISCV_SYS_MUNMAP => Some(SyscallType::Munmap),
+        RISCV_SYS_GETPRIORITY => Some(SyscallType::Getpriority),
+        RISCV_SYS_SETPRIORITY => Some(SyscallType::Setpriority),
+        RISCV_SYS_FCHOWNAT => Some(SyscallType::Fchownat),
+        RISCV_SYS_FCHMODAT => Some(SyscallType::Fchmodat),
+        RISCV_SYS_GETCWD => Some(SyscallType::Getcwd),
+        RISCV_SYS_FCHDIR => Some(SyscallType::Fchdir),
+        RISCV_SYS_CHDIR => Some(SyscallType::Chdir),
+        RISCV_SYS_UNLINKAT => Some(SyscallType::Unlinkat),
+        RISCV_SYS_GETTID => Some(SyscallType::Gettid),
+        RISCV_SYS_CAPSET => Some(SyscallType::Capset),
+        RISCV_SYS_CAPGET => Some(SyscallType::Capget),
+        RISCV_SYS_SETPGID => Some(SyscallType::Setpgid),
+        RISCV_SYS_WAIT4 => Some(SyscallType::Wait4),
+        RISCV_SYS_CLOCK_GETRES => Some(SyscallType::Getres),
+        RISCV_SYS_PRCTL => Some(SyscallType::Prctl),
         _ => None
     }
 

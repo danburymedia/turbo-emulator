@@ -5,7 +5,7 @@ use std::ops::Add;
 use std::sync::Arc;
 use base::{debug, errno_result, pagesize, sys};
 use base::platform::MemoryMapping;
-use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, TCGETS, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex, termios, ETIMEDOUT, sched_getaffinity, cpu_set_t, mkdirat, CLONE_THREAD, CLONE_FS, CLONE_FILES, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, SIGCHLD, CLONE_VFORK, nanosleep, clock_nanosleep, exit, SYS_exit};
+use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, TCGETS, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex, termios, ETIMEDOUT, sched_getaffinity, cpu_set_t, mkdirat, CLONE_THREAD, CLONE_FS, CLONE_FILES, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, SIGCHLD, CLONE_VFORK, nanosleep, clock_nanosleep, exit, SYS_exit, getpriority, __priority_which_t, id_t, setpriority, AT_SYMLINK_NOFOLLOW, getcwd, chdir, fchdir, unlinkat, SYS_capget, SYS_capset, setpgid, wait4, rusage, EFAULT, clock_getres, prctl, c_ulong};
 use crate::common::genfunc::round_up;
 use crate::elf::{MachineType, UserModeRuntime};
 use libc::mmap;
@@ -97,7 +97,21 @@ pub enum SyscallType {
     Nanosleep,
     ClockNanosleep,
     Madvise,
-    Exit
+    Exit,
+    Getpriority,
+    Setpriority,
+    Fchownat,
+    Fchmodat,
+    Getcwd,
+    Chdir,
+    Fchdir,
+    Unlinkat,
+    Capget,
+    Capset,
+    Setpgid,
+    Wait4,
+    Getres,
+    Prctl
 
 }
 #[derive(Copy, Clone, PartialEq)]
@@ -163,6 +177,49 @@ pub fn u_faccess_at(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     };
     generic_error_handle(&mut sout, res);
     sout
+}
+pub fn u_unlinkat(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let fd = sysin.args[0];
+    let pathname = sysin.args[1];
+    let flags = sysin.args[2];
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if pathname != 0 {
+        newpath = CString::new(
+            fix_path(umr.str_path.as_str(), pathname as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
+    let res = unsafe {
+        unlinkat(fd as c_int, finalptr, flags as c_int)
+    };
+    let mut sysout: SyscallOut = Default::default();
+    generic_error_handle(&mut sysout, res);
+    sysout
+}
+pub fn u_wait4(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let pid = sysin.args[0];
+    let wstatus = sysin.args[1];
+    let options = sysin.args[2];
+    let rusage = sysin.args[3];
+    let res = unsafe {
+        wait4(pid as c_int, wstatus as *mut c_int,
+              options as c_int, rusage as *mut rusage)
+    };
+    let mut sysout: SyscallOut = Default::default();
+    generic_error_handle(&mut sysout, res);
+    sysout
+}
+pub fn u_clock_getres(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let cid = sysin.args[0];
+    let tres = sysin.args[1];
+    let res = unsafe {
+        clock_getres(cid as clockid_t, tres as *mut timespec)
+    };
+    let mut sysout: SyscallOut = Default::default();
+    generic_error_handle(&mut sysout, res);
+    sysout
 }
 pub fn u_mkdirat(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let fd = sysin.args[0];
@@ -298,7 +355,8 @@ pub fn u_clone<T: UsermodeCpu>(sysin: SyscallIn, cpu: &mut T) -> SyscallOut {
     let flags = sysin.args[0] as i32;
     let excflags = flags & !exc;
     if (excflags == SIGCHLD || excflags == (CLONE_VM | CLONE_VFORK | SIGCHLD)) {
-        panic!(); // unimpl: fork()/vfork()
+        return cpu.fork_proc(sysin);
+       // panic!(); // unimpl: fork()/vfork()
     }
     cpu.clone_thread(sysin)
 
@@ -352,6 +410,8 @@ pub fn u_openat(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let newpath = CString::new(
         fix_path(umr.str_path.as_str(), path as *const c_char)
     ).unwrap();
+    debug!("openat: dirfd: {:x}, path: {:}, flags: {:}, mode: {:}", dirfd,
+        newpath.clone().to_str().unwrap(), flags, amode);
     let mut sout: SyscallOut = Default::default();
     let res = unsafe {
         openat(dirfd as c_int, newpath.as_ptr(), flags as c_int, amode as c_int)
@@ -378,11 +438,66 @@ pub fn u_statx(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     } else {
         ptr::null_mut()
     };
+    debug!("statx: dirfd: {:x}, path: {:}, flags: {:x}, mask: {:x}, statsxbuf: {:x}", dirfd,
+        newpath.clone().to_str().unwrap(), flags, mask, statsbux);
     let mut sout: SyscallOut = Default::default();
     let res = unsafe {
         libc::statx(dirfd as c_int,
                     finalptr, flags as c_int, mask as c_uint,
                     statsbux as *mut statx)
+    };
+    generic_error_handle(&mut sout, res);
+    sout
+}
+pub fn u_fchown_at(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let dirfd = sysin.args[0];
+    let path = sysin.args[1];
+    let owner = sysin.args[2];
+    let group = sysin.args[3];
+    let flags = sysin.args[4];
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if path != 0 {
+        newpath = CString::new(
+            fix_path(umr.str_path.as_str(), path as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
+    debug!("fchownat(): dirfd: {:x}, path: {:}, owner: {:x}, group: {:x}, flags: {:x}", dirfd,
+        newpath.clone().to_str().unwrap(), owner, group, flags);
+    let mut sout: SyscallOut = Default::default();
+    let res = unsafe {
+        libc::fchownat(dirfd as c_int,
+                    finalptr, owner as uid_t, group as c_uint,
+                       flags as c_int)
+    };
+    generic_error_handle(&mut sout, res);
+    sout
+}
+pub fn u_fchmod_at(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let dirfd = sysin.args[0];
+    let path = sysin.args[1];
+    let mode = sysin.args[2];
+    let mut flags = sysin.args[3];
+    if flags != (AT_SYMLINK_NOFOLLOW as u64) {
+        flags = 0;
+    }
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if path != 0 {
+        newpath = CString::new(
+            fix_path(umr.str_path.as_str(), path as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
+    debug!("fchmodat(): dirfd: {:x}, path: {:}, mode: {:x}, flags: {:x}", dirfd,
+        newpath.clone().to_str().unwrap(), mode, flags);
+    let mut sout: SyscallOut = Default::default();
+    let res = unsafe {
+        libc::fchmodat(dirfd as c_int,
+                       finalptr, mode as mode_t, flags as c_int)
     };
     generic_error_handle(&mut sout, res);
     sout
@@ -695,6 +810,29 @@ pub fn u_uname(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sysout, retval);
     sysout
 }
+pub fn u_setpriority(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let which = sysin.args[0];
+    let who = sysin.args[1];
+    let prio = sysin.args[2];
+
+    let retval = unsafe {
+        setpriority(which as __priority_which_t,
+                    who as id_t, prio as c_int)
+    };
+    let mut sysout = SyscallOut::default();
+    generic_error_handle(&mut sysout, retval);
+    sysout
+}
+pub fn u_getpriority(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let which = sysin.args[0];
+    let who = sysin.args[1];
+    let retval = unsafe {
+        getpriority(which as __priority_which_t, who as id_t)
+    };
+    let mut sysout = SyscallOut::default();
+    generic_error_handle(&mut sysout, retval);
+    sysout
+}
 pub fn u_set_tid_address(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let ptr = sysin.args[0];
     let endian = if ume.is_little_endian { MemEndian::Little } else { MemEndian::Big };
@@ -806,6 +944,17 @@ pub fn u_getpgid(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sout, retval);
     sout
 }
+pub fn u_setpgid(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let mut sout: SyscallOut = Default::default();
+    let pid = sysin.args[0];
+    let pgid = sysin.args[1];
+
+    let retval = unsafe {
+        setpgid(pid as pid_t, pgid as pid_t)
+    };
+    generic_error_handle(&mut sout, retval);
+    sout
+}
 pub fn u_getsid(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let mut sout: SyscallOut = Default::default();
     let pid = sysin.args[0];
@@ -865,6 +1014,21 @@ pub fn u_socket(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sout, retval);
     sout
 
+}
+pub fn u_prctl(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let mut sout: SyscallOut = Default::default();
+    let option = sysin.args[0];
+    let arg2 = sysin.args[1];
+    let arg3 = sysin.args[2];
+    let arg4 = sysin.args[3];
+    let arg5 = sysin.args[4];
+
+    let retval = unsafe {
+        prctl(option as c_int, arg2 as c_ulong,
+              arg3 as c_ulong, arg4 as c_ulong, arg5 as c_ulong)
+    };
+    generic_error_handle(&mut sout, retval);
+    sout
 }
 pub fn u_bind(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let endian = if ume.is_little_endian { MemEndian::Little } else { MemEndian::Big };
@@ -1017,6 +1181,11 @@ pub fn u_clock_gettime(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOu
     if ret < 0 {
         return sout;
     }
+    if tpaddr == 0 {
+        sout.is_error = true;
+        sout.ret1 = -EFAULT as i64 as u64;
+        return sout;
+    }
     if ume.is_64 {
         ume.mem_access.write_phys_64(tpaddr, timespec.tv_sec as u64, endian);
         ume.mem_access.write_phys_64(tpaddr + 8, timespec.tv_nsec as u64, endian);
@@ -1024,6 +1193,28 @@ pub fn u_clock_gettime(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOu
         ume.mem_access.write_phys_32(tpaddr, timespec.tv_sec as u32, endian);
         ume.mem_access.write_phys_32(tpaddr + 4, timespec.tv_nsec as u32, endian);
     };
+    return sout;
+}
+pub fn u_capget(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let hdrp = sysin.args[0];
+    let datap = sysin.args[1];
+    let mut sout: SyscallOut = Default::default();
+
+    let ret = unsafe {
+        syscall(SYS_capget, hdrp, datap)
+    };
+    generic_error_handle(&mut sout, ret as i32);
+    return sout;
+}
+pub fn u_capset(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let hdrp = sysin.args[0];
+    let datap = sysin.args[1];
+    let mut sout: SyscallOut = Default::default();
+
+    let ret = unsafe {
+        syscall(SYS_capset, hdrp, datap)
+    };
+    generic_error_handle(&mut sout, ret as i32);
     return sout;
 }
 pub fn u_ppoll(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
@@ -1281,6 +1472,33 @@ pub fn u_sendfile(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle_maxarch_int(&mut sout, ret as i64, ume.is_64);
     return sout;
 }
+pub fn u_fchdir(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let dirfd = sysin.args[0];
+    let mut sout: SyscallOut = Default::default();
+    let ret = unsafe {
+        fchdir(dirfd as c_int)
+    };
+    generic_error_handle(&mut sout, ret);
+    return sout;
+}
+pub fn u_chdir(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let path = sysin.args[0];
+    let mut sout: SyscallOut = Default::default();
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if path != 0 {
+        newpath = CString::new(
+            fix_path(ume.str_path.as_str(), path as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
+    let ret = unsafe {
+        chdir(finalptr)
+    };
+    generic_error_handle(&mut sout, ret);
+    return sout;
+}
 pub fn u_dup3(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let oldfd = sysin.args[0];
     let newfd = sysin.args[1];
@@ -1354,6 +1572,23 @@ pub fn u_writev(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     };
     generic_error_handle_maxarch_int(&mut sout, ret as i64, ume.is_64);
     return sout;
+}
+pub fn u_getcwd(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    let buf = sysin.args[0];
+    let size = sysin.args[1];
+    let mut sysout: SyscallOut = Default::default();
+    let ret = unsafe {
+        getcwd(buf as *mut c_char, size as size_t)
+    };
+    let res = ret as u64;
+    if res == 0 {
+        sysout.is_error = true;
+        let err = base::Error::last();
+        sysout.ret1 = -err.errno() as i64 as u64;
+    } else {
+        sysout.ret1 = res;
+    }
+    return sysout;
 }
 pub fn u_brk(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let new_val = sysin.args[0];
@@ -1476,6 +1711,8 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
             SyscallOut::default()
         }
         SyscallType::Getaffinity => {
+            //SyscallOut::default()
+
             u_getaffinity(sysin, cpu.get_ume())
         }
         SyscallType::Rseq => {
@@ -1500,10 +1737,21 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
             SyscallOut::default()
 
         }
-        SyscallType::Exit => {
-            u_exit(sysin, cpu.get_ume())
-
-        }
+        SyscallType::Getpriority => u_getpriority(sysin, cpu.get_ume()),
+        SyscallType::Setpriority => u_setpriority(sysin, cpu.get_ume()),
+        SyscallType::Exit => u_exit(sysin, cpu.get_ume()),
+        SyscallType::Fchownat => u_fchown_at(sysin, cpu.get_ume()),
+        SyscallType::Fchmodat => u_fchmod_at(sysin, cpu.get_ume()),
+        SyscallType::Getcwd => u_getcwd(sysin, cpu.get_ume()),
+        SyscallType::Fchdir => u_fchdir(sysin, cpu.get_ume()),
+        SyscallType::Chdir => u_chdir(sysin, cpu.get_ume()),
+        SyscallType::Unlinkat => u_unlinkat(sysin, cpu.get_ume()),
+        SyscallType::Capget => u_capget(sysin, cpu.get_ume()),
+        SyscallType::Capset => u_capset(sysin, cpu.get_ume()),
+        SyscallType::Setpgid => u_setpgid(sysin, cpu.get_ume()),
+        SyscallType::Wait4 => u_wait4(sysin, cpu.get_ume()),
+        SyscallType::Getres => u_clock_getres(sysin, cpu.get_ume()),
+        SyscallType::Prctl => u_prctl(sysin, cpu.get_ume()),
         _ => {
             panic!("unimpl syscall");
         },
@@ -1524,5 +1772,6 @@ pub trait UsermodeCpu {
     fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo);
     //fn set_tls_addr(&mut self, addr: u64) -> GenericStackt;
     fn clone_thread(&mut self, sysin: SyscallIn) -> SyscallOut;
+    fn fork_proc(&mut self, sysin: SyscallIn) -> SyscallOut;
 
 }
