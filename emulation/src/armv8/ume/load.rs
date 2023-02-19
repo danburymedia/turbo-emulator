@@ -1,7 +1,7 @@
 use std::ffi::CString;
 use std::sync::Arc;
 use base::platform::MemoryMapping;
-use base::{debug, info, MappedRegion, Protection};
+use base::{debug, gettid, info, MappedRegion, Protection};
 use goblin::elf::Elf;
 use sync::Mutex;
 use crate::armv8::common::ARM64_PAGE_SIZE;
@@ -50,7 +50,9 @@ pub fn init_arm64_runtime(ef: &Elf) -> UserModeRuntime {
         sigcnst: Arc::new(Mutex::new(SigConstants::default())),
         search_path: Default::default(),
         str_path: "".to_string(),
-        tls_base: 0
+        tid_val: gettid() as u64,
+        flags: 0,
+        ctid_val: 0
     }
 }
 fn push_stack_val(ai: &mut Arm64Cpu, val: u64) {

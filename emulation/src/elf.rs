@@ -45,7 +45,7 @@ pub enum Error {
     #[error("Executable wants an interpreter, but no sysroot path was given")]
     NoInterp,
 }
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum MachineType {
     Riscv,
     Arm64,
@@ -93,7 +93,10 @@ pub struct UserModeRuntime {
     pub sigcnst: Arc<Mutex<SigConstants>>,
     pub search_path: PathBuf,
     pub str_path: String,
-    pub tls_base: u64,
+    pub tid_val: u64,
+    pub flags: i32,
+    pub ctid_val: u64,
+
 }
 #[derive(Default)]
 pub struct MemState {
@@ -132,7 +135,9 @@ impl Default for UserModeRuntime {
             sigcnst: Arc::new(Default::default()),
             search_path: Default::default(),
             str_path: "".to_string(),
-            tls_base: 0,
+            tid_val: 0,
+            flags: 0,
+            ctid_val: 0
         }
     }
 }

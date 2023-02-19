@@ -219,6 +219,10 @@ pub fn fsub_s(ri: &mut RiscvInt, args: &RiscvArgs) {
     float32_gen_arith(ri, args, FloatingOps::Sub);
 
 }
+pub fn fsub_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    float64_gen_arith(ri, args, FloatingOps::Sub);
+
+}
 pub fn fmul_s(ri: &mut RiscvInt, args: &RiscvArgs) {
     float32_gen_arith(ri, args, FloatingOps::Mul);
 
@@ -456,6 +460,14 @@ pub fn fcvt_d_lu(ri: &mut RiscvInt, args: &RiscvArgs) {
                             insn_2_rm_with_csr(ri, args.rm),
                             Some(&mut fpstate));
     write_float64(ri, fs1.into_bits(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
+}
+pub fn fcvt_s_lu(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+    let fs1 = F32::from_u64(ri.regs[args.rs1 as usize],
+                            insn_2_rm_with_csr(ri, args.rm),
+                            Some(&mut fpstate));
+    write_float32(ri, fs1.into_bits(), args.rd as usize);
     fps_2_fflags(ri, fpstate);
 }
 pub fn fcvt_d_wu(ri: &mut RiscvInt, args: &RiscvArgs) {

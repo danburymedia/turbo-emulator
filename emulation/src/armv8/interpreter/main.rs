@@ -10,7 +10,7 @@ use crate::armv8::ume::defs::{arm64_translate_syscall, write_arm64_stat};
 use crate::common::memory::{flat_mem, MemEndian};
 use crate::elf::UserModeRuntime;
 use crate::linux_usermode::defs::{GenericStat, write_sysinfo_generic64};
-use crate::linux_usermode::main::{dispatch, SyscallIn, UsermodeCpu};
+use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
 use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask};
 
 pub struct Arm64Cpu {
@@ -254,6 +254,10 @@ impl UsermodeCpu for Arm64Cpu {
     }
 
     fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo) {
+        todo!()
+    }
+
+    fn clone_thread(&mut self, sysin: SyscallIn) -> SyscallOut {
         todo!()
     }
 }

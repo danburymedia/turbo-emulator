@@ -5,7 +5,7 @@ use std::ops::Add;
 use std::sync::Arc;
 use base::{debug, errno_result, pagesize, sys};
 use base::platform::MemoryMapping;
-use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, TCGETS, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex, termios, ETIMEDOUT, sched_getaffinity, cpu_set_t};
+use libc::{c_char, c_int, c_void, clock_gettime, clock_settime, clockid_t, close, EINVAL, ENOMEM, faccessat, fcntl, fd_set, fstatat, getuid, geteuid, iovec, lseek, MAP_ANON, MAP_ANONYMOUS, MAP_FAILED, MAP_FIXED, MAP_PRIVATE, MAP_SHARED, mprotect, off_t, open, openat, PROT_EXEC, PROT_READ, PROT_WRITE, read, readv, sigaction, sigset_t, size_t, ssize_t, SYS_exit_group, SYS_set_tid_address, syscall, time_t, timespec, timeval, uname, TCGETS, utsname, write, writev, TIOCGPGRP, TIOCGWINSZ, winsize, ioctl, SOCK_NONBLOCK, socketpair, ppoll, pollfd, c_short, c_long, socket, clone, SYS_clone, CLONE_VM, pipe2, sysinfo, fstat, posix_fadvise64, off64_t, fchown, uid_t, gid_t, mode_t, fchmod, utimensat, SYS_lookup_dcookie, dup3, O_CLOEXEC, getgid, setgid, setuid, sendfile, bind, sockaddr, socklen_t, sendto, recvfrom, ITIMER_REAL, itimerval, SYS_setitimer, SYS_getitimer, connect, listen, ftruncate, getpid, getppid, pid_t, getpgid, getsid, kill, SYS_getdents64, dirent64, truncate, statx, c_uint, F_SETLK, F_GETFL, F_SETFL, F_GETFD, F_SETFD, rlimit, getrlimit, __rlimit_resource_t, readlink, getrandom, prlimit64, rlimit64, readlinkat, SYS_futex, termios, ETIMEDOUT, sched_getaffinity, cpu_set_t, mkdirat, CLONE_THREAD, CLONE_FS, CLONE_FILES, CLONE_CHILD_SETTID, CLONE_CHILD_CLEARTID, SIGCHLD, CLONE_VFORK, nanosleep, clock_nanosleep, exit, SYS_exit};
 use crate::common::genfunc::round_up;
 use crate::elf::{MachineType, UserModeRuntime};
 use libc::mmap;
@@ -14,7 +14,7 @@ use sync::Mutex;
 use crate::common::{host_guest_endian_mismatch, IS_LITTLE_ENDIAN};
 use crate::common::memory::MemEndian;
 use crate::linux_usermode::defs::{GenericStat, plat2generic_stat};
-use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask, SINFO, u_sigaction};
+use crate::linux_usermode::signals::{block_all_signals, GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask, SINFO, u_sigaction};
 
 #[derive(Copy, Clone, PartialEq, Debug)]
 pub enum SyscallType {
@@ -93,6 +93,12 @@ pub enum SyscallType {
     Gettid,
     Getaffinity,
     Sigaltstack,
+    Mkdirat,
+    Nanosleep,
+    ClockNanosleep,
+    Madvise,
+    Exit
+
 }
 #[derive(Copy, Clone, PartialEq)]
 pub struct SyscallIn {
@@ -158,6 +164,26 @@ pub fn u_faccess_at(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     generic_error_handle(&mut sout, res);
     sout
 }
+pub fn u_mkdirat(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
+    let fd = sysin.args[0];
+    let pathname = sysin.args[1];
+    let mode = sysin.args[2];
+    let mut newpath = CString::new("").unwrap();
+    let finalptr: *const c_char = if pathname != 0 {
+        newpath = CString::new(
+            fix_path(umr.str_path.as_str(), pathname as *const c_char)
+        ).unwrap();
+        newpath.as_ptr()
+    } else {
+        ptr::null_mut()
+    };
+    let res = unsafe {
+        mkdirat(fd as c_int, finalptr, mode as mode_t)
+    };
+    let mut sysout: SyscallOut = Default::default();
+    generic_error_handle(&mut sysout, res);
+    sysout
+}
 pub fn u_fchown(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let fd = sysin.args[0];
     let owner = sysin.args[1];
@@ -177,7 +203,7 @@ pub fn u_futex(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
     let timeout = sysin.args[3];
     let uaddr2 = sysin.args[4];
     let val3 = sysin.args[5];
-    if val == 2 {
+    if val == 2 && umr.machine_type == MachineType::Arm64 {
         // glibc sometimes calls this even in single threaded program
         let changeval: *mut u32 = fduaddr as *mut u32;
         unsafe {
@@ -268,24 +294,13 @@ pub fn u_fstat_at<T: UsermodeCpu>(sysin: SyscallIn, cpu: &mut T) -> SyscallOut {
 pub fn u_clone<T: UsermodeCpu>(sysin: SyscallIn, cpu: &mut T) -> SyscallOut {
    // clone()
     // we will not support cris/s390x for the forseeable future
-    let umr = cpu.get_ume();
+    let exc = CLONE_CHILD_SETTID | CLONE_CHILD_CLEARTID;
     let flags = sysin.args[0] as i32;
-    let stack_addr = sysin.args[1];
-    let parent_tid_addr = sysin.args[2];
-    let (tls, child_tid) = match umr.machine_type {
-        MachineType::Riscv => {
-            (sysin.args[3], sysin.args[4])
-        }
-      _ => panic!()
-    };
-    if flags & CLONE_VM != 0 {
-        //we are sharing mem space. This means that changes in new process will effect
-        // old ones. We have to make a copy of the CPU context so the workings
-        // of the new process don't override the old
-
+    let excflags = flags & !exc;
+    if (excflags == SIGCHLD || excflags == (CLONE_VM | CLONE_VFORK | SIGCHLD)) {
+        panic!(); // unimpl: fork()/vfork()
     }
-    panic!();
-    //syscall(SYS_clone)
+    cpu.clone_thread(sysin)
 
 }
 pub fn u_fadvise64(sysin: SyscallIn, umr: &mut UserModeRuntime) -> SyscallOut {
@@ -659,6 +674,17 @@ pub fn u_exit_group(sysin: SyscallIn, ume: &mut UserModeRuntime) -> ! {
     };
     unreachable!();
 }
+pub fn u_exit(sysin: SyscallIn, ume: &mut UserModeRuntime) -> ! {
+    let status = sysin.args[0];
+    let endian = if ume.is_little_endian { MemEndian::Little } else { MemEndian::Big };
+    if ume.flags & CLONE_CHILD_CLEARTID != 0 {
+        ume.mem_access.write_phys_32(ume.ctid_val,0, endian);
+    }
+    unsafe {
+        syscall(SYS_exit, status)
+    };
+    unreachable!();
+}
 pub fn u_uname(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     // todo: return arch specific string
     let addr = sysin.args[0];
@@ -945,6 +971,36 @@ pub fn u_socketpair(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     ume.mem_access.write_phys_32(arrayaddr, resarr[0] as u32, endian);
     ume.mem_access.write_phys_32(arrayaddr + 4, resarr[1] as u32, endian);
     sout
+
+}
+pub fn u_nanosleep(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    // todo: endian/size fix
+    let req = sysin.args[0];
+    let rem = sysin.args[1];
+    let mut sout: SyscallOut = Default::default();
+
+    let ret = unsafe {
+        nanosleep(req as *const timespec, rem as *mut timespec)
+    };
+    generic_error_handle(&mut sout, ret);
+    return sout;
+
+}
+pub fn u_clock_nanosleep(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
+    // todo: endian/size fix
+    let cid = sysin.args[0];
+    let flags = sysin.args[1];
+    let req = sysin.args[2];
+    let rem = sysin.args[3];
+
+    let mut sout: SyscallOut = Default::default();
+
+    let ret = unsafe {
+        clock_nanosleep(cid as clockid_t, flags as c_int,
+                        req as *const timespec, rem as *mut timespec)
+    };
+    generic_error_handle(&mut sout, ret);
+    return sout;
 
 }
 pub fn u_clock_gettime(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
@@ -1410,10 +1466,6 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
         SyscallType::Getsid => u_getsid(sysin, cpu.get_ume()),
         SyscallType::Kill => u_kill(sysin, cpu.get_ume()),
         SyscallType::Getdents64 => u_getdents64(sysin, cpu.get_ume()),
-        SyscallType::ArmSetTls => {
-            cpu.get_ume().tls_base = sysin.args[0];
-            SyscallOut::default()
-        }
         SyscallType::Mmap2 => u_mmap2(sysin, cpu.get_ume()),
         SyscallType::Truncate => u_truncate(sysin, cpu.get_ume()),
         SyscallType::Access => u_access(sysin, cpu.get_ume()),
@@ -1441,6 +1493,17 @@ pub fn dispatch<T: UsermodeCpu>(cpu: &mut T, sysin: SyscallIn) -> SyscallOut {
         SyscallType::Futex => {
             u_futex(sysin, cpu.get_ume())
         }
+        SyscallType::Mkdirat => u_mkdirat(sysin, cpu.get_ume()),
+        SyscallType::Nanosleep => u_nanosleep(sysin, cpu.get_ume()),
+        SyscallType::ClockNanosleep => u_clock_nanosleep(sysin, cpu.get_ume()),
+        SyscallType::Madvise => {
+            SyscallOut::default()
+
+        }
+        SyscallType::Exit => {
+            u_exit(sysin, cpu.get_ume())
+
+        }
         _ => {
             panic!("unimpl syscall");
         },
@@ -1459,4 +1522,7 @@ pub trait UsermodeCpu {
     fn set_altstack(&mut self, addr: u64, si: &SigInfo);
     fn get_altstack(&mut self, addr: u64) -> GenericStackt;
     fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo);
+    //fn set_tls_addr(&mut self, addr: u64) -> GenericStackt;
+    fn clone_thread(&mut self, sysin: SyscallIn) -> SyscallOut;
+
 }

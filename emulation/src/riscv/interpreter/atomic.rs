@@ -1,4 +1,4 @@
-use std::sync::atomic::Ordering;
+use std::sync::atomic::{AtomicPtr, AtomicU64, Ordering};
 use crate::riscv::common::{Xlen, RiscvArgs, Trap};
 use crate::riscv::interpreter::main::{RiscvInt};
 use crate::riscv::mem::MemAccessCircumstances;
@@ -14,114 +14,116 @@ pub enum AtomicOps {
     Min
 }
 fn gen_atomic_32(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
-    /*
-    todo: to make true atomic, here is an idea
-     first, load value, then do op, then write only if mem value matches original.
-     if it doesn't, restart process with new value, or report failure
-
-     */
+    if !ri.usermode {
+        unimplemented!();
+    }
     let addr = ri.regs[gg.rs1 as usize];
-    let dat1 = match ri.read32(addr, false, true) {
-        Err(z) => {
-            return;
-        },
-        Ok(res) => {
-            res
-        }
-    };
     let dat2 = ri.regs[gg.rs2 as usize] as u32;
-    let res = match op {
-        AtomicOps::Swap => {
-            dat2
-        }
-        AtomicOps::Add => {
-            dat1.wrapping_add(dat2)
-        }
-        AtomicOps::And => {
-            dat1 & dat2
-        }
-        AtomicOps::Or => {
-            dat1 | dat2
-        }
-        AtomicOps::Xor => {
-            dat1 ^ dat2
+    unsafe {
+        loop {
+            let adat1: AtomicPtr<u32> = AtomicPtr::new(addr as *mut u32);
+            let dat1ptr = adat1.load(Ordering::SeqCst);
+            let mut dat1 = *dat1ptr;
+            let mut res = match op {
+                AtomicOps::Swap => {
+                    dat2
+                }
+                AtomicOps::Add => {
+                    dat1.wrapping_add(dat2)
+                }
+                AtomicOps::And => {
+                    dat1 & dat2
+                }
+                AtomicOps::Or => {
+                    dat1 | dat2
+                }
+                AtomicOps::Xor => {
+                    dat1 ^ dat2
 
-        }
-        AtomicOps::Max => {
-            match dat2 as u32 >= dat1 as u32 {
-                true => dat2,
-                false => dat1
+                }
+                AtomicOps::Max => {
+                    match dat2 >= dat1 {
+                        true => dat2,
+                        false => dat1
+                    }
+                }
+                AtomicOps::Min => {
+                    match dat2 >= dat1 {
+                        true => dat1,
+                        false => dat2
+                    }
+                }
+            };
+            let resptr= &mut res;
+            match adat1.compare_exchange(dat1ptr, resptr,
+                                         Ordering::SeqCst, Ordering::SeqCst) {
+                Ok(p) => {
+                    *p = res;
+                    ri.regs[gg.rd as usize] = ri.sign_ext(dat1 as u64);
+                    break;
+                }
+                Err(_) => {
+                    continue
+                }
             }
         }
-        AtomicOps::Min => {
-            match dat2 as u32 >= dat1 as u32 {
-                true => dat1,
-                false => dat2
-            }
-        }
-    };
-    match ri.write32(addr, res, true) {
-        Err(_) => {
-            return;
-        },
-        Ok(_) => { }
-    };
-    ri.regs[gg.rd as usize] = ri.sign_ext(dat1 as u64);
+    }
 }
 fn gen_atomic_64(ri: &mut RiscvInt, op: AtomicOps, gg: &RiscvArgs) {
-    /*
-    todo: to make true atomic, here is an idea
-     first, load value, then do op, then write only if mem value matches original.
-     if it doesn't, restart process with new value, or report failure
-
-     */
+    if !ri.usermode {
+        unimplemented!();
+    }
     let addr = ri.regs[gg.rs1 as usize];
-    let dat1 = match ri.read64(addr, false, true) {
-        Err(z) => {
-            return;
-        },
-        Ok(res) => {
-            res
-        }
-    };
     let dat2 = ri.regs[gg.rs2 as usize];
-    let res = match op {
-        AtomicOps::Swap => {
-            ri.regs[gg.rs2 as usize]
-        }
-        AtomicOps::Add => {
-            dat1.wrapping_add(dat2)
-        }
-        AtomicOps::And => {
-            dat1 & dat2
-        }
-        AtomicOps::Or => {
-            dat1 | dat2
-        }
-        AtomicOps::Xor => {
-            dat1 ^ dat2
+    unsafe {
+        loop {
+            let mut adat1: AtomicPtr<u64> = AtomicPtr::new(addr as *mut u64);
+            let dat1ptr = adat1.load(Ordering::SeqCst);
+            let mut dat1 = *dat1ptr;
+            let mut res = match op {
+                AtomicOps::Swap => {
+                    dat2
+                }
+                AtomicOps::Add => {
+                    dat1.wrapping_add(dat2)
+                }
+                AtomicOps::And => {
+                    dat1 & dat2
+                }
+                AtomicOps::Or => {
+                    dat1 | dat2
+                }
+                AtomicOps::Xor => {
+                    dat1 ^ dat2
 
-        }
-        AtomicOps::Max => {
-            match dat2 >= dat1 {
-                true => dat2,
-                false => dat1
+                }
+                AtomicOps::Max => {
+                    match dat2 >= dat1 {
+                        true => dat2,
+                        false => dat1
+                    }
+                }
+                AtomicOps::Min => {
+                    match dat2 >= dat1 {
+                        true => dat1,
+                        false => dat2
+                    }
+                }
+            };
+            let resptr= &mut res;
+            match adat1.compare_exchange(addr as *mut u64, resptr as *mut u64,
+                                   Ordering::SeqCst, Ordering::SeqCst) {
+                Ok(p) => {
+                    *p = res;
+                    ri.regs[gg.rd as usize] = dat1;
+                    break;
+                }
+                Err(p) => {
+                    continue
+                }
             }
         }
-        AtomicOps::Min => {
-            match dat2 >= dat1 {
-                true => dat1,
-                false => dat2
-            }
-        }
-    };
-    match ri.write64(addr, res, true) {
-        Err(_) => {
-            return;
-        },
-        Ok(_) => { }
-    };
-    ri.regs[gg.rd as usize] = dat1;
+    }
 }
 pub fn amoadd_d(ri: &mut RiscvInt, args: &RiscvArgs) {
     gen_atomic_64(ri, AtomicOps::Add, args);
@@ -129,9 +131,16 @@ pub fn amoadd_d(ri: &mut RiscvInt, args: &RiscvArgs) {
 pub fn amoor_d(ri: &mut RiscvInt, args: &RiscvArgs) {
     gen_atomic_64(ri, AtomicOps::Or, args);
 }
+pub fn amoswap_d(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_64(ri, AtomicOps::Swap, args);
+}
 pub fn amoadd_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     gen_atomic_32(ri, AtomicOps::Add, args);
 }
+pub fn amoor_w(ri: &mut RiscvInt, args: &RiscvArgs) {
+    gen_atomic_32(ri, AtomicOps::Or, args);
+}
+
 pub fn sc_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     let addr = ri.regs[args.rs1 as usize];
     let val = ri.regs[args.rs2 as usize] as u32;

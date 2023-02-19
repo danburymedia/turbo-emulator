@@ -484,6 +484,13 @@ pub fn riscv_translate_syscall(val: u16) -> Option<SyscallType> {
         RISCV_SYS_PRLIMIT64 => Some(SyscallType::Prlimit64),
         RISCV_SYS_SCHED_GETAFFINITY => Some(SyscallType::Getaffinity),
         RISCV_SYS_STATX => Some(SyscallType::Statx),
+        RISCV_SYS_GETRANDOM => Some(SyscallType::Getrandom),
+        RISCV_SYS_MKDIRAT => Some(SyscallType::Mkdirat),
+        RISCV_SYS_READLINKAT => Some(SyscallType::Readlinkat),
+        RISCV_SYS_CLOCK_NANOSLEEP => Some(SyscallType::ClockNanosleep),
+        RISCV_SYS_MADVISE => Some(SyscallType::Madvise),
+        RISCV_SYS_EXIT => Some(SyscallType::Exit),
+        RISCV_SYS_FUTEX => Some(SyscallType::Futex),
         _ => None
     }
 

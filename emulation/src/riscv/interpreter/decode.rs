@@ -1162,6 +1162,18 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn fle_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fle_d
+            });
+        } else {
+            interpreter::defs::fle_d(self, &args);
+        }
+        return true;
+    }
     fn fcvt_s_w(&mut self, args: RiscvArgs) -> bool {
         if self.cache_enabled {
             self.insert_insn_current(RiscvInstr {
@@ -2287,6 +2299,54 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
             });
         } else {
             interpreter::defs::fadd_d(self, &args);
+        }
+        return true;
+    }
+    fn amoswap_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amoswap_d
+            });
+        } else {
+            interpreter::defs::amoswap_d(self, &args);
+        }
+        return true;
+    }
+    fn fcvt_s_lu(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_s_lu
+            });
+        } else {
+            interpreter::defs::fcvt_s_lu(self, &args);
+        }
+        return true;
+    }
+    fn fsub_d(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fsub_d
+            });
+        } else {
+            interpreter::defs::fsub_d(self, &args);
+        }
+        return true;
+    }
+    fn amoor_w(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::amoor_w
+            });
+        } else {
+            interpreter::defs::amoor_w(self, &args);
         }
         return true;
     }

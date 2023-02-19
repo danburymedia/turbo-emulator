@@ -1,6 +1,7 @@
 use std::cell::UnsafeCell;
 use std::collections::HashMap;
 use std::sync::{Arc};
+use base::{debug, gettid};
 use libc::sysinfo;
 use sync::Mutex;
 use vm_memory::GuestMemory;
@@ -8,8 +9,8 @@ use rustc_hash::FxHashMap;
 use crate::common::memory::{flat_mem, MemEndian};
 use crate::elf::UserModeRuntime;
 use crate::linux_usermode::defs::{GenericStat, read32_advance_ptr, read64_advance_ptr};
-use crate::linux_usermode::main::{dispatch, SyscallIn, UsermodeCpu};
-use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, get_generic_sigaction_64, SigEntry, SigInfo, Sigmask, SIGNAL_AVAIL, SINFO};
+use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
+use crate::linux_usermode::signals::{block_all_signals, GenericSigactionArg, GenericStackt, get_generic_sigaction_64, SigEntry, SigInfo, Sigmask, SIGNAL_AVAIL, SINFO};
 use crate::riscv::common::{Exception, get_privilege_encoding, get_trap_cause, Priv, RISCV_STACKPOINTER_REG, RiscvArgs, Trap, Xlen, xlen2bits, xlen2misa};
 use crate::riscv::common::Exception::{EnvironmentCallFromMMode, EnvironmentCallFromUMode};
 use crate::riscv::decoder;
@@ -131,7 +132,6 @@ impl RiscvInt {
             is_reservation: false,
             res_val: 0,
             is_compressed: false,
-
             res_len: 0
         }
     }
@@ -468,7 +468,14 @@ impl RiscvInt {
     }
     pub fn handle_syscall(&mut self) {
         let syscallnum = self.regs[17]; // a7
-        let systype = riscv_translate_syscall(syscallnum as u16).unwrap();
+        let systype = if let Some(s) = riscv_translate_syscall(syscallnum as u16) {
+            debug!("Going to execute syscall {:?} (number {:}, on thread id {:x})",
+                s, syscallnum, self.user_struct.tid_val);
+            s
+        } else {
+            debug!("Failed to execute syscall number {:}", syscallnum);
+            panic!();
+        };
         let arg1 = self.regs[10]; // a0
         let arg2 = self.regs[11];
         let arg3 = self.regs[12];
@@ -579,52 +586,5 @@ impl RiscvInt {
 
 
         }
-    }
-}
-impl UsermodeCpu for RiscvInt {
-    fn push_stack_natural(&mut self, val: u64) {
-        todo!()
-    }
-
-    fn pop_stack_natural(&mut self) -> u64 {
-        todo!()
-    }
-
-    fn get_stack_reg(&mut self) -> u64 {
-        todo!()
-    }
-
-    fn get_ume(&mut self) -> &mut UserModeRuntime {
-        &mut self.user_struct
-    }
-    fn write_stat_t(&mut self, addr: u64, stat_t: GenericStat) {
-        // risc-v user mode always little endian
-        write_riscv_stat(addr, MemEndian::Little, stat_t);
-    }
-
-    fn get_sigaction(&mut self, addr: u64) -> GenericSigactionArg {
-        get_generic_sigaction_64(addr, MemEndian::Little, 0x04000000)
-    }
-
-    fn get_mask(&mut self, addr: u64) -> Sigmask {
-        todo!()
-    }
-
-    fn set_old_sigaction(&mut self, addr: u64, se: SigEntry) {
-        todo!()
-    }
-    fn write_sysinfo_t(&mut self, addr: u64, si: sysinfo) {
-        write_riscv_sysinfo(addr, MemEndian::Little, si);
-    }
-    fn set_altstack(&mut self, addr: u64, si: &SigInfo) {
-        todo!()
-    }
-
-    fn get_altstack(&mut self, addr: u64) -> GenericStackt {
-        todo!()
-    }
-
-    fn rt_frame_setup(&mut self, sig: i32, si: &mut SigInfo) {
-        todo!()
     }
 }

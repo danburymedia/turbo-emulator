@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::ffi::CString;
 use std::sync::Arc;
 use base::platform::MemoryMapping;
-use base::{debug, info, MappedRegion, pagesize, Protection};
+use base::{debug, gettid, info, MappedRegion, pagesize, Protection};
 use goblin::elf::Elf;
 use sync::Mutex;
 use crate::common::genfunc::{round_down, round_up};
@@ -71,7 +71,9 @@ pub fn init_riscv_runtime(ef: &Elf) -> UserModeRuntime {
         sigcnst: Arc::new(Mutex::new(riscv64_init_sigconstant())),
         search_path: Default::default(),
         str_path: "".to_string(),
-        tls_base: 0
+        tid_val: gettid() as u64,
+        flags: 0,
+        ctid_val: 0
     }
 }
 fn push_stack_val(ri: &mut RiscvInt, val: u64) {
