@@ -14,6 +14,8 @@ pub use crate::system_allocator::{MmioType, AllocOptions, SystemAllocator, Syste
 pub mod address_allocator;
 mod address_range;
 mod system_allocator;
+pub mod bus;
+pub mod pciaddr;
 // pub mod address_allocate_notag;
 
 /// Used to tag SystemAllocator allocations.
