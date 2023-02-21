@@ -2,85 +2,77 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use serde::{Deserialize, Serialize};
-use std::{
-    ffi::CString,
-    mem::MaybeUninit,
-    os::windows::io::{AsRawHandle, RawHandle},
-    ptr::null,
-    time::Duration,
-};
-use win_util::{SecurityAttributes, SelfRelativeSecurityDescriptor};
-use winapi::{
-    shared::{
-        minwindef::{DWORD, FALSE, TRUE},
-        winerror::WAIT_TIMEOUT,
-    },
-    um::{
-        handleapi::DuplicateHandle,
-        processthreadsapi::GetCurrentProcess,
-        synchapi::{CreateEventA, OpenEventA, ResetEvent, SetEvent, WaitForSingleObject},
-        winbase::WAIT_FAILED,
-        winnt::{DUPLICATE_SAME_ACCESS, EVENT_MODIFY_STATE, HANDLE},
-    },
-};
+use std::ffi::CString;
+use std::mem::MaybeUninit;
+use std::os::windows::io::AsRawHandle;
+use std::os::windows::io::RawHandle;
+use std::ptr::null;
+use std::time::Duration;
 
-use super::{errno_result, Error, RawDescriptor, Result};
-use crate::{
-    descriptor::{AsRawDescriptor, FromRawDescriptor, IntoRawDescriptor, SafeDescriptor},
-    Event as CrateEvent,
-};
+use serde::Deserialize;
+use serde::Serialize;
+use win_util::SecurityAttributes;
+use win_util::SelfRelativeSecurityDescriptor;
+use winapi::shared::minwindef::DWORD;
+use winapi::shared::minwindef::FALSE;
+use winapi::shared::minwindef::TRUE;
+use winapi::shared::winerror::WAIT_TIMEOUT;
+use winapi::um::handleapi::DuplicateHandle;
+use winapi::um::processthreadsapi::GetCurrentProcess;
+use winapi::um::synchapi::CreateEventA;
+use winapi::um::synchapi::OpenEventA;
+use winapi::um::synchapi::ResetEvent;
+use winapi::um::synchapi::SetEvent;
+use winapi::um::synchapi::WaitForSingleObject;
+use winapi::um::winbase::INFINITE;
+use winapi::um::winbase::WAIT_FAILED;
+use winapi::um::winbase::WAIT_OBJECT_0;
+use winapi::um::winnt::DUPLICATE_SAME_ACCESS;
+use winapi::um::winnt::EVENT_MODIFY_STATE;
+use winapi::um::winnt::HANDLE;
+
+use super::errno_result;
+use super::Error;
+use super::RawDescriptor;
+use super::Result;
+use crate::descriptor::AsRawDescriptor;
+use crate::descriptor::FromRawDescriptor;
+use crate::descriptor::IntoRawDescriptor;
+use crate::descriptor::SafeDescriptor;
+use crate::Event;
+use crate::EventWaitResult;
 
 /// A safe wrapper around Windows synchapi methods used to mimic Linux eventfd (man 2 eventfd).
 /// Since the eventfd isn't using "EFD_SEMAPHORE", we don't need to keep count so we can just use
 /// events.
 #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
-pub struct Event {
+pub(crate) struct PlatformEvent {
     event_handle: SafeDescriptor,
 }
 
 pub trait EventExt {
-    fn reset(&self) -> Result<()>;
-    fn new_with_manual_reset(manual_reset: bool) -> Result<CrateEvent>;
-    fn new_auto_reset() -> Result<CrateEvent>;
-    fn open(name: &str) -> Result<CrateEvent>;
-    fn create_event_with_name(name: &str) -> Result<CrateEvent>;
+    fn new_auto_reset() -> Result<Event>;
+    fn open(name: &str) -> Result<Event>;
+    fn create_event_with_name(name: &str) -> Result<Event>;
 }
 
-impl EventExt for CrateEvent {
-    fn reset(&self) -> Result<()> {
-        self.0.reset()
+impl EventExt for Event {
+    fn new_auto_reset() -> Result<Event> {
+        PlatformEvent::new_with_manual_reset(false).map(Event)
     }
 
-    fn new_with_manual_reset(manual_reset: bool) -> Result<CrateEvent> {
-        Event::new_with_manual_reset(manual_reset).map(CrateEvent)
+    fn open(name: &str) -> Result<Event> {
+        PlatformEvent::open(name).map(Event)
     }
 
-    fn new_auto_reset() -> Result<CrateEvent> {
-        CrateEvent::new_with_manual_reset(false)
-    }
-
-    fn open(name: &str) -> Result<CrateEvent> {
-        Event::open(name).map(CrateEvent)
-    }
-
-    fn create_event_with_name(name: &str) -> Result<CrateEvent> {
-        Event::create_event_with_name(name).map(CrateEvent)
+    fn create_event_with_name(name: &str) -> Result<Event> {
+        PlatformEvent::create_event_with_name(name).map(Event)
     }
 }
 
-/// Wrapper around the return value of doing a read on an EventFd which distinguishes between
-/// getting a valid count of the number of times the eventfd has been written to and timing out
-/// waiting for the count to be non-zero.
-#[derive(Debug, PartialEq, Eq)]
-pub enum EventReadResult {
-    Count(u64),
-    Timeout,
-}
-
-impl Event {
-    pub fn new_with_manual_reset(manual_reset: bool) -> Result<Event> {
+impl PlatformEvent {
+    pub fn new_with_manual_reset(manual_reset: bool) -> Result<PlatformEvent> {
         let handle = unsafe {
             CreateEventA(
                 SecurityAttributes::new_with_security_descriptor(
@@ -96,12 +88,12 @@ impl Event {
         if handle.is_null() {
             return errno_result();
         }
-        Ok(Event {
+        Ok(PlatformEvent {
             event_handle: unsafe { SafeDescriptor::from_raw_descriptor(handle) },
         })
     }
 
-    pub fn create_event_with_name(name: &str) -> Result<Event> {
+    pub fn create_event_with_name(name: &str) -> Result<PlatformEvent> {
         let event_str = CString::new(String::from(name)).unwrap();
         let handle = unsafe {
             CreateEventA(
@@ -118,46 +110,34 @@ impl Event {
         if handle.is_null() {
             return errno_result();
         }
-        Ok(Event {
+        Ok(PlatformEvent {
             event_handle: unsafe { SafeDescriptor::from_raw_descriptor(handle) },
         })
     }
 
-    pub fn new() -> Result<Event> {
+    pub fn new() -> Result<PlatformEvent> {
         // Require manual reset
-        Event::new_with_manual_reset(true)
+        PlatformEvent::new_with_manual_reset(true)
     }
 
-    pub fn open(name: &str) -> Result<Event> {
+    pub fn open(name: &str) -> Result<PlatformEvent> {
         let event_str = CString::new(String::from(name)).unwrap();
         let handle = unsafe { OpenEventA(EVENT_MODIFY_STATE, FALSE, event_str.as_ptr()) };
         if handle.is_null() {
             return errno_result();
         }
-        Ok(Event {
+        Ok(PlatformEvent {
             event_handle: unsafe { SafeDescriptor::from_raw_descriptor(handle) },
         })
     }
 
-    pub fn new_auto_reset() -> Result<Event> {
-        Event::new_with_manual_reset(false)
-    }
-
-    pub fn write(&self, _v: u64) -> Result<()> {
+    /// See `Event::signal`.
+    pub fn signal(&self) -> Result<()> {
         let event_result = unsafe { SetEvent(self.event_handle.as_raw_descriptor()) };
         if event_result == 0 {
             return errno_result();
         }
         Ok(())
-    }
-
-    pub fn read(&self) -> Result<u64> {
-        let read_result = self.read_timeout(Duration::new(std::i64::MAX as u64, 0));
-        match read_result {
-            Ok(EventReadResult::Count(c)) => Ok(c),
-            Ok(EventReadResult::Timeout) => Err(Error::new(WAIT_TIMEOUT)),
-            Err(e) => Err(e),
-        }
     }
 
     pub fn reset(&self) -> Result<()> {
@@ -169,34 +149,45 @@ impl Event {
         }
     }
 
-    /// Blocks for a maximum of `timeout` duration until the the event is signaled. If
-    /// a timeout does not occur then the count is returned as a EventReadResult::Count(1),
-    /// and the event resets. If a timeout does occur then this function will return
-    /// EventReadResult::Timeout.
-    pub fn read_timeout(&self, timeout: Duration) -> Result<EventReadResult> {
-        let wait_result = unsafe {
-            WaitForSingleObject(
-                self.event_handle.as_raw_descriptor(),
-                timeout.as_millis() as DWORD,
-            )
+    /// Wait for the event with an optional timeout and reset the event if it was signaled.
+    fn wait_and_reset(&self, timeout: Option<Duration>) -> Result<EventWaitResult> {
+        let milliseconds = match timeout {
+            Some(timeout) => timeout.as_millis() as DWORD,
+            None => INFINITE,
         };
 
-        // We are using an infinite timeout so we can ignore WAIT_ABANDONED
-        match wait_result {
+        // Safe because we pass an event object handle owned by this PlatformEvent.
+        let wait_result = match unsafe {
+            WaitForSingleObject(self.event_handle.as_raw_descriptor(), milliseconds)
+        } {
+            WAIT_OBJECT_0 => Ok(EventWaitResult::Signaled),
+            WAIT_TIMEOUT => Ok(EventWaitResult::TimedOut),
             WAIT_FAILED => errno_result(),
-            WAIT_TIMEOUT => Ok(EventReadResult::Timeout),
-            _ => {
-                // Safe because self manages the handle and we know it was valid as it
-                // was just successfully waited upon. It is safe to reset a non manual reset event as well.
-                match unsafe { ResetEvent(self.event_handle.as_raw_descriptor()) } {
-                    0 => errno_result(),
-                    _ => Ok(EventReadResult::Count(1)),
-                }
-            }
+            other => Err(Error::new(other)),
+        }?;
+
+        if wait_result == EventWaitResult::Signaled {
+            self.reset()?;
         }
+
+        Ok(wait_result)
     }
 
-    pub fn try_clone(&self) -> Result<Event> {
+    /// See `Event::wait`.
+    pub fn wait(&self) -> Result<()> {
+        let wait_result = self.wait_and_reset(None)?;
+        // Waiting with `INFINITE` can only return when the event is signaled or an error occurs.
+        // `EventWaitResult::TimedOut` is not valid here.
+        assert_eq!(wait_result, EventWaitResult::Signaled);
+        Ok(())
+    }
+
+    /// See `Event::wait_timeout`.
+    pub fn wait_timeout(&self, timeout: Duration) -> Result<EventWaitResult> {
+        self.wait_and_reset(Some(timeout))
+    }
+
+    pub fn try_clone(&self) -> Result<PlatformEvent> {
         let mut event_clone: HANDLE = MaybeUninit::uninit().as_mut_ptr();
         let duplicate_result = unsafe {
             DuplicateHandle(
@@ -212,66 +203,72 @@ impl Event {
         if duplicate_result == 0 {
             return errno_result();
         }
-        Ok(unsafe { Event::from_raw_descriptor(event_clone) })
+        Ok(unsafe { PlatformEvent::from_raw_descriptor(event_clone) })
     }
 }
 
-impl AsRawDescriptor for Event {
+impl AsRawDescriptor for PlatformEvent {
     fn as_raw_descriptor(&self) -> RawDescriptor {
         self.event_handle.as_raw_descriptor()
     }
 }
 
-impl FromRawDescriptor for Event {
+impl FromRawDescriptor for PlatformEvent {
     unsafe fn from_raw_descriptor(descriptor: RawDescriptor) -> Self {
-        Event {
+        PlatformEvent {
             event_handle: SafeDescriptor::from_raw_descriptor(descriptor),
         }
     }
 }
 
-impl AsRawHandle for Event {
+impl AsRawHandle for PlatformEvent {
     fn as_raw_handle(&self) -> RawHandle {
         self.as_raw_descriptor()
     }
 }
 
-impl IntoRawDescriptor for Event {
+impl IntoRawDescriptor for PlatformEvent {
     fn into_raw_descriptor(self) -> RawDescriptor {
         self.event_handle.into_raw_descriptor()
     }
 }
 
-// Event is safe for send & Sync despite containing a raw handle to its
-// file mapping object. As long as the instance to Event stays alive, this
+impl From<PlatformEvent> for SafeDescriptor {
+    fn from(evt: PlatformEvent) -> Self {
+        evt.event_handle
+    }
+}
+
+// PlatformEvent is safe for send & Sync despite containing a raw handle to its
+// file mapping object. As long as the instance to PlatformEvent stays alive, this
 // pointer will be a valid handle.
-unsafe impl Send for Event {}
-unsafe impl Sync for Event {}
+unsafe impl Send for PlatformEvent {}
+unsafe impl Sync for PlatformEvent {}
 
 #[cfg(test)]
 mod tests {
+    use winapi::shared::winerror::WAIT_TIMEOUT;
+    use winapi::um::winbase::INFINITE;
+    use winapi::um::winbase::WAIT_OBJECT_0;
+
     use super::*;
-    use winapi::{
-        shared::winerror::WAIT_TIMEOUT,
-        um::winbase::{INFINITE, WAIT_OBJECT_0},
-    };
 
     #[test]
     fn new() {
-        Event::new().unwrap();
+        PlatformEvent::new().unwrap();
     }
 
     #[test]
     fn read_write() {
-        let evt = Event::new().unwrap();
-        evt.write(55).unwrap();
-        assert_eq!(evt.read(), Ok(1));
+        let evt = PlatformEvent::new().unwrap();
+        evt.signal().unwrap();
+        assert_eq!(evt.wait(), Ok(()));
     }
 
     #[test]
     fn read_write_auto_reset() {
-        let evt = Event::new_auto_reset().unwrap();
-        evt.write(55).unwrap();
+        let evt = PlatformEvent::new_with_manual_reset(false).unwrap();
+        evt.signal().unwrap();
 
         // Wait for the notification.
         let result = unsafe { WaitForSingleObject(evt.as_raw_descriptor(), INFINITE) };
@@ -284,8 +281,8 @@ mod tests {
 
     #[test]
     fn read_write_notifies_until_read() {
-        let evt = Event::new().unwrap();
-        evt.write(55).unwrap();
+        let evt = PlatformEvent::new().unwrap();
+        evt.signal().unwrap();
 
         // Wait for the notification.
         let result = unsafe { WaitForSingleObject(evt.as_raw_descriptor(), INFINITE) };
@@ -296,26 +293,26 @@ mod tests {
         assert_eq!(result, WAIT_OBJECT_0);
 
         // Read and ensure the notification has cleared.
-        evt.read().expect("Failed to read event.");
+        evt.wait().expect("Failed to read event.");
         let result = unsafe { WaitForSingleObject(evt.as_raw_descriptor(), 0) };
         assert_eq!(result, WAIT_TIMEOUT);
     }
 
     #[test]
     fn clone() {
-        let evt = Event::new().unwrap();
+        let evt = PlatformEvent::new().unwrap();
         let evt_clone = evt.try_clone().unwrap();
-        evt.write(923).unwrap();
-        assert_eq!(evt_clone.read(), Ok(1));
+        evt.signal().unwrap();
+        assert_eq!(evt_clone.wait(), Ok(()));
     }
 
     #[test]
     fn timeout() {
-        let evt = Event::new().expect("failed to create event");
+        let evt = PlatformEvent::new().expect("failed to create event");
         assert_eq!(
-            evt.read_timeout(Duration::from_millis(1))
+            evt.wait_timeout(Duration::from_millis(1))
                 .expect("failed to read from event with timeout"),
-            EventReadResult::Timeout
+            EventWaitResult::TimedOut
         );
     }
 }

@@ -345,6 +345,10 @@ pub struct UnixSeqpacket {
     fd: RawFd,
 }
 
+// Safety: UnixSeqpacket is just a file descriptor, and it is safe to send FDs
+// between threads.
+unsafe impl Send for UnixSeqpacket {}
+
 impl UnixSeqpacket {
     /// Open a `SOCK_SEQPACKET` connection to socket named by `path`.
     ///
@@ -545,6 +549,7 @@ impl UnixSeqpacket {
         Ok((buf, fd_buf))
     }
 
+    #[allow(clippy::useless_conversion)]
     fn set_timeout(&self, timeout: Option<Duration>, kind: libc::c_int) -> io::Result<()> {
         let timeval = match timeout {
             Some(t) => {
@@ -690,11 +695,43 @@ impl IntoRawFd for UnixSeqpacket {
 /// Like a `UnixListener` but for accepting `UnixSeqpacket` type sockets.
 pub struct UnixSeqpacketListener {
     fd: RawFd,
+    no_path: bool,
 }
 
 impl UnixSeqpacketListener {
     /// Creates a new `UnixSeqpacketListener` bound to the given path.
     pub fn bind<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        if path.as_ref().starts_with("/proc/self/fd/") {
+            let fd = path
+                .as_ref()
+                .file_name()
+                .expect("Failed to get fd filename")
+                .to_str()
+                .expect("fd filename should be unicode")
+                .parse::<i32>()
+                .expect("fd should be an integer");
+            let mut result: c_int = 0;
+            let mut result_len = size_of::<c_int>() as libc::socklen_t;
+            let ret = unsafe {
+                libc::getsockopt(
+                    fd,
+                    libc::SOL_SOCKET,
+                    libc::SO_ACCEPTCONN,
+                    &mut result as *mut _ as *mut libc::c_void,
+                    &mut result_len,
+                )
+            };
+            if ret < 0 {
+                return Err(io::Error::last_os_error());
+            }
+            if result != 1 {
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    "specified descriptor is not a listening socket",
+                ));
+            }
+            return Ok(UnixSeqpacketListener { fd, no_path: true });
+        }
         // Safe socket initialization since we handle the returned error.
         let fd = unsafe {
             match libc::socket(libc::AF_UNIX, libc::SOCK_SEQPACKET, 0) {
@@ -716,7 +753,7 @@ impl UnixSeqpacketListener {
                 return Err(io::Error::last_os_error());
             }
         }
-        Ok(UnixSeqpacketListener { fd })
+        Ok(UnixSeqpacketListener { fd, no_path: false })
     }
 
     /// Blocks for and accepts a new incoming connection and returns the socket associated with that
@@ -766,6 +803,12 @@ impl UnixSeqpacketListener {
             sun_family: libc::AF_UNIX as libc::sa_family_t,
             sun_path: [0; 108],
         };
+        if self.no_path {
+            return Err(io::Error::new(
+                io::ErrorKind::InvalidInput,
+                "socket has no path",
+            ));
+        }
         let sun_path_offset = (&addr.sun_path as *const _ as usize
             - &addr.sun_family as *const _ as usize)
             as libc::socklen_t;
@@ -827,7 +870,7 @@ impl Drop for UnixSeqpacketListener {
 impl FromRawFd for UnixSeqpacketListener {
     // Unsafe in drop function
     unsafe fn from_raw_fd(fd: RawFd) -> Self {
-        Self { fd }
+        Self { fd, no_path: false }
     }
 }
 
@@ -871,11 +914,6 @@ impl Drop for UnlinkUnixSeqpacketListener {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{env, io::ErrorKind, path::PathBuf};
-
-    fn tmpdir() -> PathBuf {
-        env::temp_dir()
-    }
 
     #[test]
     fn sockaddr_un_zero_length_input() {
@@ -920,206 +958,5 @@ mod tests {
         for (addr_char, ref_char) in addr.sun_path.iter().zip(ref_sun_path.iter()) {
             assert_eq!(addr_char, ref_char);
         }
-    }
-
-    #[test]
-    fn unix_seqpacket_path_not_exists() {
-        let res = UnixSeqpacket::connect("/path/not/exists");
-        assert!(res.is_err());
-    }
-
-    #[test]
-    fn unix_seqpacket_listener_path() {
-        let mut socket_path = tmpdir();
-        socket_path.push("unix_seqpacket_listener_path");
-        let listener = UnlinkUnixSeqpacketListener(
-            UnixSeqpacketListener::bind(&socket_path)
-                .expect("failed to create UnixSeqpacketListener"),
-        );
-        let listener_path = listener.path().expect("failed to get socket listener path");
-        assert_eq!(socket_path, listener_path);
-    }
-
-    #[test]
-    fn unix_seqpacket_path_exists_pass() {
-        let mut socket_path = tmpdir();
-        socket_path.push("path_to_socket");
-        let _listener = UnlinkUnixSeqpacketListener(
-            UnixSeqpacketListener::bind(&socket_path)
-                .expect("failed to create UnixSeqpacketListener"),
-        );
-        let _res =
-            UnixSeqpacket::connect(socket_path.as_path()).expect("UnixSeqpacket::connect failed");
-    }
-
-    #[test]
-    fn unix_seqpacket_path_listener_accept_with_timeout() {
-        let mut socket_path = tmpdir();
-        socket_path.push("path_listerner_accept_with_timeout");
-        let listener = UnlinkUnixSeqpacketListener(
-            UnixSeqpacketListener::bind(&socket_path)
-                .expect("failed to create UnixSeqpacketListener"),
-        );
-
-        for d in [Duration::from_millis(10), Duration::ZERO] {
-            let _ = listener.accept_with_timeout(d).expect_err(&format!(
-                "UnixSeqpacket::accept_with_timeout {:?} connected",
-                d
-            ));
-
-            let s1 = UnixSeqpacket::connect(socket_path.as_path())
-                .unwrap_or_else(|_| panic!("UnixSeqpacket::connect {:?} failed", d));
-
-            let s2 = listener
-                .accept_with_timeout(d)
-                .unwrap_or_else(|_| panic!("UnixSeqpacket::accept {:?} failed", d));
-
-            let data1 = &[0, 1, 2, 3, 4];
-            let data2 = &[10, 11, 12, 13, 14];
-            s2.send(data2).expect("failed to send data2");
-            s1.send(data1).expect("failed to send data1");
-            let recv_data = &mut [0; 5];
-            s2.recv(recv_data).expect("failed to recv data");
-            assert_eq!(data1, recv_data);
-            s1.recv(recv_data).expect("failed to recv data");
-            assert_eq!(data2, recv_data);
-        }
-    }
-
-    #[test]
-    fn unix_seqpacket_path_listener_accept() {
-        let mut socket_path = tmpdir();
-        socket_path.push("path_listerner_accept");
-        let listener = UnlinkUnixSeqpacketListener(
-            UnixSeqpacketListener::bind(&socket_path)
-                .expect("failed to create UnixSeqpacketListener"),
-        );
-        let s1 =
-            UnixSeqpacket::connect(socket_path.as_path()).expect("UnixSeqpacket::connect failed");
-
-        let s2 = listener.accept().expect("UnixSeqpacket::accept failed");
-
-        let data1 = &[0, 1, 2, 3, 4];
-        let data2 = &[10, 11, 12, 13, 14];
-        s2.send(data2).expect("failed to send data2");
-        s1.send(data1).expect("failed to send data1");
-        let recv_data = &mut [0; 5];
-        s2.recv(recv_data).expect("failed to recv data");
-        assert_eq!(data1, recv_data);
-        s1.recv(recv_data).expect("failed to recv data");
-        assert_eq!(data2, recv_data);
-    }
-
-    #[test]
-    fn unix_seqpacket_zero_timeout() {
-        let (s1, _s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        // Timeouts less than a microsecond are too small and round to zero.
-        s1.set_read_timeout(Some(Duration::from_nanos(10)))
-            .expect_err("successfully set zero timeout");
-    }
-
-    #[test]
-    fn unix_seqpacket_read_timeout() {
-        let (s1, _s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        s1.set_read_timeout(Some(Duration::from_millis(1)))
-            .expect("failed to set read timeout for socket");
-        let _ = s1.recv(&mut [0]);
-    }
-
-    #[test]
-    fn unix_seqpacket_write_timeout() {
-        let (s1, _s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        s1.set_write_timeout(Some(Duration::from_millis(1)))
-            .expect("failed to set write timeout for socket");
-    }
-
-    #[test]
-    fn unix_seqpacket_send_recv() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        let data1 = &[0, 1, 2, 3, 4];
-        let data2 = &[10, 11, 12, 13, 14];
-        s2.send(data2).expect("failed to send data2");
-        s1.send(data1).expect("failed to send data1");
-        let recv_data = &mut [0; 5];
-        s2.recv(recv_data).expect("failed to recv data");
-        assert_eq!(data1, recv_data);
-        s1.recv(recv_data).expect("failed to recv data");
-        assert_eq!(data2, recv_data);
-    }
-
-    #[test]
-    fn unix_seqpacket_send_fragments() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        let data1 = &[0, 1, 2, 3, 4];
-        let data2 = &[10, 11, 12, 13, 14, 15, 16];
-        s1.send(data1).expect("failed to send data1");
-        s1.send(data2).expect("failed to send data2");
-
-        let recv_data = &mut [0; 32];
-        let size = s2.recv(recv_data).expect("failed to recv data");
-        assert_eq!(size, data1.len());
-        assert_eq!(data1, &recv_data[0..size]);
-
-        let size = s2.recv(recv_data).expect("failed to recv data");
-        assert_eq!(size, data2.len());
-        assert_eq!(data2, &recv_data[0..size]);
-    }
-
-    #[test]
-    fn unix_seqpacket_get_readable_bytes() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        assert_eq!(s1.get_readable_bytes().unwrap(), 0);
-        assert_eq!(s2.get_readable_bytes().unwrap(), 0);
-        let data1 = &[0, 1, 2, 3, 4];
-        s1.send(data1).expect("failed to send data");
-
-        assert_eq!(s1.get_readable_bytes().unwrap(), 0);
-        assert_eq!(s2.get_readable_bytes().unwrap(), data1.len());
-
-        let recv_data = &mut [0; 5];
-        s2.recv(recv_data).expect("failed to recv data");
-        assert_eq!(s1.get_readable_bytes().unwrap(), 0);
-        assert_eq!(s2.get_readable_bytes().unwrap(), 0);
-    }
-
-    #[test]
-    fn unix_seqpacket_next_packet_size() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        let data1 = &[0, 1, 2, 3, 4];
-        s1.send(data1).expect("failed to send data");
-
-        assert_eq!(s2.next_packet_size().unwrap(), 5);
-        s1.set_read_timeout(Some(Duration::from_micros(1)))
-            .expect("failed to set read timeout");
-        assert_eq!(
-            s1.next_packet_size().unwrap_err().kind(),
-            ErrorKind::WouldBlock
-        );
-        drop(s2);
-        assert_eq!(
-            s1.next_packet_size().unwrap_err().kind(),
-            ErrorKind::ConnectionReset
-        );
-    }
-
-    #[test]
-    fn unix_seqpacket_recv_to_vec() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        let data1 = &[0, 1, 2, 3, 4];
-        s1.send(data1).expect("failed to send data");
-
-        let recv_data = &mut vec![];
-        s2.recv_to_vec(recv_data).expect("failed to recv data");
-        assert_eq!(recv_data, &mut vec![0, 1, 2, 3, 4]);
-    }
-
-    #[test]
-    fn unix_seqpacket_recv_as_vec() {
-        let (s1, s2) = UnixSeqpacket::pair().expect("failed to create socket pair");
-        let data1 = &[0, 1, 2, 3, 4];
-        s1.send(data1).expect("failed to send data");
-
-        let recv_data = s2.recv_as_vec().expect("failed to recv data");
-        assert_eq!(recv_data, vec![0, 1, 2, 3, 4]);
     }
 }

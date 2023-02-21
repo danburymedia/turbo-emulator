@@ -1,4 +1,4 @@
-// Copyright 2019 The Chromium OS Authors. All rights reserved.
+// Copyright 2019 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -41,22 +41,30 @@
 //! ```
 pub mod async_api;
 
-use async_trait::async_trait;
 use std::cmp::min;
 use std::error;
-use std::fmt::{self, Display};
-use std::io::{self, Read, Write};
+use std::fmt;
+use std::fmt::Display;
+use std::io;
+use std::io::Read;
+use std::io::Write;
 #[cfg(unix)]
-use std::os::unix::io::RawFd;
+use std::os::unix::io::RawFd as RawDescriptor;
+#[cfg(windows)]
+use std::os::windows::io::RawHandle as RawDescriptor;
 use std::result::Result;
 use std::str::FromStr;
-use std::time::{Duration, Instant};
+use std::time::Duration;
+use std::time::Instant;
 
-pub use async_api::{AsyncStream, AudioStreamsExecutor};
+pub use async_api::AsyncStream;
+pub use async_api::AudioStreamsExecutor;
+use async_trait::async_trait;
 use remain::sorted;
+use serde::Serialize;
 use thiserror::Error;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, Serialize)]
 pub enum SampleFormat {
     U8,
     S16LE,
@@ -88,15 +96,36 @@ impl Display for SampleFormat {
     }
 }
 
+impl FromStr for SampleFormat {
+    type Err = SampleFormatError;
+    fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+        match s {
+            "U8" => Ok(SampleFormat::U8),
+            "S16_LE" => Ok(SampleFormat::S16LE),
+            "S24_LE" => Ok(SampleFormat::S24LE),
+            "S32_LE" => Ok(SampleFormat::S32LE),
+            _ => Err(SampleFormatError::InvalidSampleFormat),
+        }
+    }
+}
+
+/// Errors that are possible from a `SampleFormat`.
+#[sorted]
+#[derive(Error, Debug)]
+pub enum SampleFormatError {
+    #[error("Must be in [U8, S16_LE, S24_LE, S32_LE]")]
+    InvalidSampleFormat,
+}
+
 /// Valid directions of an audio stream.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum StreamDirection {
     Playback,
     Capture,
 }
 
 /// Valid effects for an audio stream.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum StreamEffect {
     NoEffect,
     EchoCancellation,
@@ -146,6 +175,7 @@ pub trait StreamSourceGenerator: Sync + Send {
 }
 
 /// `StreamSource` creates streams for playback or capture of audio.
+#[async_trait(?Send)]
 pub trait StreamSource: Send {
     /// Returns a stream control and buffer generator object. These are separate as the buffer
     /// generator might want to be passed to the audio stream.
@@ -170,6 +200,20 @@ pub trait StreamSource: Send {
         _ex: &dyn AudioStreamsExecutor,
     ) -> Result<(Box<dyn StreamControl>, Box<dyn AsyncPlaybackBufferStream>), BoxError> {
         Err(Box::new(Error::Unimplemented))
+    }
+
+    /// Returns a stream control and async buffer generator object asynchronously.
+    /// Default implementation calls and blocks on `new_async_playback_stream()`.
+    #[allow(clippy::type_complexity)]
+    async fn async_new_async_playback_stream(
+        &mut self,
+        num_channels: usize,
+        format: SampleFormat,
+        frame_rate: u32,
+        buffer_size: usize,
+        ex: &dyn AudioStreamsExecutor,
+    ) -> Result<(Box<dyn StreamControl>, Box<dyn AsyncPlaybackBufferStream>), BoxError> {
+        self.new_async_playback_stream(num_channels, format, frame_rate, buffer_size, ex)
     }
 
     /// Returns a stream control and buffer generator object. These are separate as the buffer
@@ -231,10 +275,30 @@ pub trait StreamSource: Send {
         ))
     }
 
+    /// Returns a stream control and async buffer generator object asynchronously.
+    /// Default implementation calls and blocks on `new_async_capture_stream()`.
+    #[allow(clippy::type_complexity)]
+    async fn async_new_async_capture_stream(
+        &mut self,
+        num_channels: usize,
+        format: SampleFormat,
+        frame_rate: u32,
+        buffer_size: usize,
+        effects: &[StreamEffect],
+        ex: &dyn AudioStreamsExecutor,
+    ) -> Result<
+        (
+            Box<dyn StreamControl>,
+            Box<dyn capture::AsyncCaptureBufferStream>,
+        ),
+        BoxError,
+    > {
+        self.new_async_capture_stream(num_channels, format, frame_rate, buffer_size, effects, ex)
+    }
+
     /// Returns any open file descriptors needed by the implementor. The FD list helps users of the
     /// StreamSource enter Linux jails making sure not to close needed FDs.
-    #[cfg(unix)]
-    fn keep_fds(&self) -> Option<Vec<RawFd>> {
+    fn keep_rds(&self) -> Option<Vec<RawDescriptor>> {
         None
     }
 }
@@ -331,6 +395,8 @@ pub trait AsyncBufferCommit {
 pub enum PlaybackBufferError {
     #[error("Invalid buffer length")]
     InvalidLength,
+    #[error("Slicing of playback buffer out of bounds")]
+    SliceOutOfBounds,
 }
 
 /// `AudioBuffer` is one buffer that holds buffer_size audio frames.
@@ -449,6 +515,26 @@ impl<'a> PlaybackBuffer<'a> {
     pub fn commit(&mut self) {
         self.drop
             .commit(self.buffer.offset / self.buffer.frame_size);
+    }
+
+    /// Writes up to `size` bytes directly to this buffer inside of the given callback function
+    /// with a buffer size error check.
+    ///
+    /// TODO(b/238933737): Investigate removing this method for Windows when
+    /// switching from Ac97 to Virtio-Snd
+    pub fn copy_cb_with_checks<F: FnOnce(&mut [u8])>(
+        &mut self,
+        size: usize,
+        cb: F,
+    ) -> Result<(), PlaybackBufferError> {
+        // only write complete frames.
+        let len = size / self.buffer.frame_size * self.buffer.frame_size;
+        if self.buffer.offset + len > self.buffer.buffer.len() {
+            return Err(PlaybackBufferError::SliceOutOfBounds);
+        }
+        cb(&mut self.buffer.buffer[self.buffer.offset..(self.buffer.offset + len)]);
+        self.buffer.offset += len;
+        Ok(())
     }
 
     /// Writes up to `size` bytes directly to this buffer inside of the given callback function.
@@ -708,10 +794,11 @@ impl StreamSourceGenerator for NoopStreamSourceGenerator {
 
 #[cfg(test)]
 mod tests {
+    use futures::FutureExt;
+    use io::Write;
+
     use super::async_api::test::TestExecutor;
     use super::*;
-    use futures::FutureExt;
-    use io::{self, Write};
 
     #[test]
     fn invalid_buffer_length() {

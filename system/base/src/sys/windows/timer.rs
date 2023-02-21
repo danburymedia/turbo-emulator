@@ -2,26 +2,29 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::{
-    os::windows::io::{AsRawHandle, RawHandle},
-    ptr,
-    time::Duration,
-};
+use std::os::windows::io::AsRawHandle;
+use std::os::windows::io::RawHandle;
+use std::ptr;
+use std::time::Duration;
 
-use win_util::{LargeInteger, SecurityAttributes, SelfRelativeSecurityDescriptor};
-use winapi::{
-    shared::{minwindef::FALSE, winerror::WAIT_TIMEOUT},
-    um::{
-        synchapi::{CancelWaitableTimer, SetWaitableTimer, WaitForSingleObject},
-        winbase::{CreateWaitableTimerA, INFINITE, WAIT_OBJECT_0},
-    },
-};
+use win_util::LargeInteger;
+use win_util::SecurityAttributes;
+use win_util::SelfRelativeSecurityDescriptor;
+use winapi::shared::minwindef::FALSE;
+use winapi::um::synchapi::CancelWaitableTimer;
+use winapi::um::synchapi::SetWaitableTimer;
+use winapi::um::synchapi::WaitForSingleObject;
+use winapi::um::winbase::CreateWaitableTimerA;
+use winapi::um::winbase::INFINITE;
+use winapi::um::winbase::WAIT_OBJECT_0;
 
-use super::{errno_result, win::nt_query_timer_resolution, Result};
-use crate::{
-    descriptor::{AsRawDescriptor, FromRawDescriptor, SafeDescriptor},
-    timer::{Timer, WaitResult},
-};
+use super::errno_result;
+use super::win::nt_query_timer_resolution;
+use super::Result;
+use crate::descriptor::AsRawDescriptor;
+use crate::descriptor::FromRawDescriptor;
+use crate::descriptor::SafeDescriptor;
+use crate::timer::Timer;
 
 impl AsRawHandle for Timer {
     fn as_raw_handle(&self) -> RawHandle {
@@ -84,7 +87,17 @@ impl Timer {
             -((dur.as_secs() * 10_000_000 + (dur.subsec_nanos() as u64) / 100) as i64),
         );
         let period: i32 = match interval {
-            Some(int) => int.as_millis() as i32,
+            Some(int) => {
+                if int.is_zero() {
+                    // Duration of zero implies non-periodic, which means setting period
+                    // to 0ms.
+                    0
+                } else {
+                    // Otherwise, convert to ms and make sure it's >=1ms.
+                    std::cmp::max(1, int.as_millis() as i32)
+                }
+            }
+            // Period of 0ms=non-periodic.
             None => 0,
         };
 
@@ -106,34 +119,17 @@ impl Timer {
         Ok(())
     }
 
-    /// Waits until the timer expires or an optional wait timeout expires, whichever happens first.
-    ///
-    /// # Returns
-    ///
-    /// - `WaitResult::Expired` if the timer expired.
-    /// - `WaitResult::Timeout` if `timeout` was not `None` and the timer did not expire within the
-    ///   specified timeout period.
-    pub fn wait_for(&mut self, timeout: Option<Duration>) -> Result<WaitResult> {
-        let timeout = match timeout {
-            None => INFINITE,
-            Some(dur) => dur.as_millis() as u32,
-        };
-
+    /// Waits until the timer expires.
+    pub fn wait(&mut self) -> Result<()> {
         // Safe because this doesn't modify any memory and we check the return value.
-        let ret = unsafe { WaitForSingleObject(self.as_raw_descriptor(), timeout) };
+        let ret = unsafe { WaitForSingleObject(self.as_raw_descriptor(), INFINITE) };
 
         // Should return WAIT_OBJECT_0, otherwise it's some sort of error or
         // timeout (which shouldn't happen in this case).
         match ret {
-            WAIT_OBJECT_0 => Ok(WaitResult::Expired),
-            WAIT_TIMEOUT => Ok(WaitResult::Timeout),
+            WAIT_OBJECT_0 => Ok(()),
             _ => errno_result(),
         }
-    }
-
-    /// Waits until the timer expires.
-    pub fn wait(&mut self) -> Result<WaitResult> {
-        self.wait_for(None)
     }
 
     /// After a timer is triggered from an EventContext, mark the timer as having been waited for.

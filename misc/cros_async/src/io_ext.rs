@@ -15,22 +15,22 @@
 //! Operations can only access memory in a `Vec` or an implementor of `BackingMemory`. See the
 //! `URingExecutor` documentation for an explaination of why.
 
-use std::{
-    fs::File,
-    io,
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
+use std::fs::File;
+use std::io;
+use std::ops::Deref;
+use std::ops::DerefMut;
+use std::sync::Arc;
 
 use async_trait::async_trait;
-use base::{AsRawDescriptor, RawDescriptor};
+use base::AsRawDescriptor;
+use base::RawDescriptor;
+#[cfg(unix)]
+use base::UnixSeqpacket;
 use remain::sorted;
 use thiserror::Error as ThisError;
 
-use super::{BackingMemory, MemRegion};
-
-#[cfg(unix)]
-use base::UnixSeqpacket;
+use super::BackingMemory;
+use super::MemRegion;
 
 #[cfg(unix)]
 #[sorted]
@@ -256,29 +256,33 @@ impl<T: AsRawDescriptor> IntoAsync for AsyncWrapper<T> {}
 
 #[cfg(all(test, unix))]
 mod tests {
+    use std::fs::File;
+    use std::fs::OpenOptions;
+    use std::future::Future;
+    use std::pin::Pin;
+    use std::sync::Arc;
+    use std::task::Context;
+    use std::task::Poll;
+    use std::task::Waker;
+    use std::thread;
+
     use base::Event;
-    use std::{
-        fs::{File, OpenOptions},
-        future::Future,
-        pin::Pin,
-        sync::Arc,
-        task::{Context, Poll, Waker},
-        thread,
-    };
+    use base::EventExt;
     use sync::Mutex;
 
     use super::*;
-    use crate::{
-        mem::VecIoWrapper,
-        sys::unix::{
-            executor::{
-                async_poll_from, async_poll_from_local, async_uring_from, async_uring_from_local,
-            },
-            uring_executor::use_uring,
-            FdExecutor, PollSource, URingExecutor, UringSource,
-        },
-        Executor, MemRegion,
-    };
+    use crate::mem::VecIoWrapper;
+    use crate::sys::unix::executor::async_poll_from;
+    use crate::sys::unix::executor::async_poll_from_local;
+    use crate::sys::unix::executor::async_uring_from;
+    use crate::sys::unix::executor::async_uring_from_local;
+    use crate::sys::unix::uring_executor::is_uring_stable;
+    use crate::sys::unix::FdExecutor;
+    use crate::sys::unix::PollSource;
+    use crate::sys::unix::URingExecutor;
+    use crate::sys::unix::UringSource;
+    use crate::Executor;
+    use crate::MemRegion;
 
     struct State {
         should_quit: bool,
@@ -316,7 +320,7 @@ mod tests {
 
     #[test]
     fn await_uring_from_poll() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         // Start a uring operation and then await the result from an FdExecutor.
@@ -350,7 +354,7 @@ mod tests {
 
     #[test]
     fn await_poll_from_uring() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         // Start a poll operation and then await the result from a URingExecutor.
@@ -384,7 +388,7 @@ mod tests {
 
     #[test]
     fn readvec() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go<F: AsRawDescriptor>(async_source: Box<dyn IoSourceExt<F>>) {
@@ -420,7 +424,7 @@ mod tests {
 
     #[test]
     fn writevec() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go<F: AsRawDescriptor>(async_source: Box<dyn IoSourceExt<F>>) {
@@ -455,7 +459,7 @@ mod tests {
 
     #[test]
     fn readmem() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go<F: AsRawDescriptor>(async_source: Box<dyn IoSourceExt<F>>) {
@@ -508,7 +512,7 @@ mod tests {
 
     #[test]
     fn writemem() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go<F: AsRawDescriptor>(async_source: Box<dyn IoSourceExt<F>>) {
@@ -547,7 +551,7 @@ mod tests {
 
     #[test]
     fn read_u64s() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go(async_source: File, ex: URingExecutor) -> u64 {
@@ -563,7 +567,7 @@ mod tests {
 
     #[test]
     fn read_eventfds() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
 
@@ -572,28 +576,28 @@ mod tests {
         }
 
         let eventfd = Event::new().unwrap();
-        eventfd.write(0x55).unwrap();
+        eventfd.write_count(0x55).unwrap();
         let ex = URingExecutor::new().unwrap();
         let uring_source = async_uring_from(eventfd, &ex).unwrap();
         let val = ex.run_until(go(uring_source)).unwrap();
         assert_eq!(val, 0x55);
 
         let eventfd = Event::new().unwrap();
-        eventfd.write(0xaa).unwrap();
+        eventfd.write_count(0xaa).unwrap();
         let poll_ex = FdExecutor::new().unwrap();
         let poll_source = async_poll_from(eventfd, &poll_ex).unwrap();
         let val = poll_ex.run_until(go(poll_source)).unwrap();
         assert_eq!(val, 0xaa);
 
         let eventfd = Event::new().unwrap();
-        eventfd.write(0x55).unwrap();
+        eventfd.write_count(0x55).unwrap();
         let ex = URingExecutor::new().unwrap();
         let uring_source = async_uring_from_local(eventfd, &ex).unwrap();
         let val = ex.run_until(go(uring_source)).unwrap();
         assert_eq!(val, 0x55);
 
         let eventfd = Event::new().unwrap();
-        eventfd.write(0xaa).unwrap();
+        eventfd.write_count(0xaa).unwrap();
         let poll_ex = FdExecutor::new().unwrap();
         let poll_source = async_poll_from_local(eventfd, &poll_ex).unwrap();
         let val = poll_ex.run_until(go(poll_source)).unwrap();
@@ -602,7 +606,7 @@ mod tests {
 
     #[test]
     fn fsync() {
-        if !use_uring() {
+        if !is_uring_stable() {
             return;
         }
         async fn go<F: AsRawDescriptor>(source: Box<dyn IoSourceExt<F>>) {

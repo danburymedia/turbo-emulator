@@ -5,15 +5,26 @@
 use std::future::Future;
 
 use async_task::Task;
+use base::debug;
+use base::warn;
+use base::AsRawDescriptors;
+use base::RawDescriptor;
+use once_cell::sync::OnceCell;
+use serde::Deserialize;
+use serde::Serialize;
+use thiserror::Error as ThisError;
 
-use base::{AsRawDescriptors, RawDescriptor};
-
-use super::{
-    poll_source::Error as PollError, uring_executor::use_uring, FdExecutor, PollSource,
-    URingExecutor, UringSource,
-};
-
-use crate::{AsyncResult, IntoAsync, IoSourceExt};
+use super::poll_source::Error as PollError;
+use super::uring_executor::check_uring_availability;
+use super::uring_executor::is_uring_stable;
+use super::uring_executor::Error as UringError;
+use super::FdExecutor;
+use super::PollSource;
+use super::URingExecutor;
+use super::UringSource;
+use crate::AsyncResult;
+use crate::IntoAsync;
+use crate::IoSourceExt;
 
 pub(crate) fn async_uring_from<'a, F: IntoAsync + Send + 'a>(
     f: F,
@@ -78,7 +89,7 @@ pub(crate) fn async_poll_from_local<'a, F: IntoAsync + 'a>(
 /// // Write all bytes from `data` to `f`.
 /// async fn write_file(f: &dyn IoSourceExt<File>, mut data: Vec<u8>) -> AsyncResult<()> {
 ///     while data.len() > 0 {
-///         let (count, mut buf) = f.write_from_vec(Some(0), data).await?;
+///         let (count, mut buf) = f.write_from_vec(None, data).await?;
 ///
 ///         data = buf.split_off(count);
 ///     }
@@ -96,7 +107,7 @@ pub(crate) fn async_poll_from_local<'a, F: IntoAsync + 'a>(
 ///
 ///     while rem > 0 {
 ///         let buf = vec![0u8; min(rem, CHUNK_SIZE)];
-///         let (count, mut data) = from.read_to_vec(Some(0), buf).await?;
+///         let (count, mut data) = from.read_to_vec(None, buf).await?;
 ///
 ///         if count == 0 {
 ///             // End of file. Return the number of bytes transferred.
@@ -151,16 +162,82 @@ pub enum Executor {
     Fd(FdExecutor),
 }
 
+/// An enum to express the kind of the backend of `Executor`
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize, serde_keyvalue::FromKeyValues,
+)]
+#[serde(deny_unknown_fields, rename_all = "kebab-case")]
+pub enum ExecutorKind {
+    Uring,
+    // For command-line parsing, user-friendly "epoll" is chosen instead of fd.
+    #[serde(rename = "epoll")]
+    Fd,
+}
+
+/// If set, [`ExecutorKind::default()`] returns the value of `DEFAULT_EXECUTOR_KIND`.
+/// If not set, [`ExecutorKind::default()`] returns a statically-chosen default value, and
+/// [`ExecutorKind::default()`] initializes `DEFAULT_EXECUTOR_KIND` with that value.
+static DEFAULT_EXECUTOR_KIND: OnceCell<ExecutorKind> = OnceCell::new();
+
+impl Default for ExecutorKind {
+    fn default() -> Self {
+        *DEFAULT_EXECUTOR_KIND.get_or_init(|| ExecutorKind::Fd)
+    }
+}
+
+/// The error type for [`Executor::set_default_executor_kind()`].
+#[derive(Debug, ThisError)]
+pub enum SetDefaultExecutorKindError {
+    /// The default executor kind is set more than once.
+    #[error("The default executor kind is already set to {0:?}")]
+    SetMoreThanOnce(ExecutorKind),
+
+    /// io_uring is unavailable. The reason might be the lack of the kernel support,
+    /// but is not limited to that.
+    #[error("io_uring is unavailable: {0}")]
+    UringUnavailable(UringError),
+}
+
 impl Executor {
     /// Create a new `Executor`.
     pub fn new() -> AsyncResult<Self> {
-        if use_uring() {
-            Ok(URingExecutor::new().map(Executor::Uring)?)
-        } else {
-            Ok(FdExecutor::new()
+        Executor::with_executor_kind(ExecutorKind::default())
+    }
+
+    /// Create a new `Executor` of the given `ExecutorKind`.
+    pub fn with_executor_kind(kind: ExecutorKind) -> AsyncResult<Self> {
+        match kind {
+            ExecutorKind::Uring => Ok(URingExecutor::new().map(Executor::Uring)?),
+            ExecutorKind::Fd => Ok(FdExecutor::new()
                 .map(Executor::Fd)
-                .map_err(PollError::Executor)?)
+                .map_err(PollError::Executor)?),
         }
+    }
+
+    /// Set the default ExecutorKind for [`Self::new()`]. This call is effective only once.
+    /// If a call is the first call, it sets the default, and `set_default_executor_kind`
+    /// returns `Ok(())`. Otherwise, it returns `SetDefaultExecutorKindError::SetMoreThanOnce`
+    /// which contains the existing ExecutorKind value configured by the first call.
+    pub fn set_default_executor_kind(
+        executor_kind: ExecutorKind,
+    ) -> Result<(), SetDefaultExecutorKindError> {
+        if executor_kind == ExecutorKind::Uring {
+            check_uring_availability().map_err(SetDefaultExecutorKindError::UringUnavailable)?;
+            if !is_uring_stable() {
+                warn!(
+                    "Enabling io_uring executor on the kernel version where io_uring is unstable"
+                );
+            }
+        }
+
+        debug!("setting the default executor to {:?}", executor_kind);
+        DEFAULT_EXECUTOR_KIND.set(executor_kind).map_err(|_|
+            // `expect` succeeds since this closure runs only when DEFAULT_EXECUTOR_KIND is set.
+            SetDefaultExecutorKindError::SetMoreThanOnce(
+                *DEFAULT_EXECUTOR_KIND
+                    .get()
+                    .expect("Failed to get DEFAULT_EXECUTOR_KIND"),
+            ))
     }
 
     /// Create a new `Box<dyn IoSourceExt<F>>` associated with `self`. Callers may then use the

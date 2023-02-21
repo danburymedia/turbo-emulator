@@ -22,18 +22,20 @@ pub mod syslog;
 mod acpi_event;
 mod capabilities;
 mod descriptor;
-mod eventfd;
+mod event;
+mod file;
 mod file_flags;
 pub mod file_traits;
 mod get_filesystem_type;
-mod gmtime;
 mod mmap;
 pub mod net;
 mod netlink;
 mod notifiers;
+pub mod panic_handler;
 pub mod platform_timer_resolution;
 mod poll;
 mod priority;
+pub mod process;
 mod sched;
 pub mod scoped_signal_handler;
 mod shm;
@@ -45,75 +47,89 @@ mod terminal;
 mod timer;
 pub mod vsock;
 mod write_zeroes;
+pub mod eventfd;
+use std::ffi::CStr;
+use std::fs::remove_file;
+use std::fs::File;
+use std::fs::OpenOptions;
+use std::mem;
+use std::ops::Deref;
+use std::os::unix::io::AsRawFd;
+use std::os::unix::io::FromRawFd;
+use std::os::unix::io::RawFd;
+use std::os::unix::net::UnixDatagram;
+use std::os::unix::net::UnixListener;
+use std::os::unix::process::ExitStatusExt;
+use std::path::Path;
+use std::process::ExitStatus;
+use std::ptr;
+use std::time::Duration;
 
-pub use crate::descriptor_reflection::{
-    deserialize_with_descriptors, with_as_descriptor, with_raw_descriptor, FileSerdeWrapper,
-    SerializeDescriptors,
-};
-pub use crate::errno::{Error, Result, *};
 pub use acpi_event::*;
 pub use capabilities::drop_capabilities;
 pub use descriptor::*;
-// EventFd is deprecated. Use Event instead. EventFd will be removed as soon as rest of the current
-// users migrate.
-// TODO(b:231344063): Remove EventFd.
-pub use eventfd::{EventFd as Event, EventFd, EventReadResult};
+pub use event::EventExt;
+pub(crate) use event::PlatformEvent;
+pub use file::FileDataIterator;
 pub use file_flags::*;
 pub use get_filesystem_type::*;
-pub use gmtime::*;
 pub use ioctl::*;
+use libc::c_int;
+use libc::c_long;
+use libc::fcntl;
+use libc::pipe2;
+use libc::syscall;
+use libc::sysconf;
+use libc::waitpid;
+use libc::SYS_getpid;
+use libc::SYS_getppid;
+use libc::SYS_gettid;
+use libc::EINVAL;
+use libc::F_GETFL;
+use libc::F_SETFL;
+use libc::O_CLOEXEC;
+pub(crate) use libc::PROT_READ;
+pub(crate) use libc::PROT_WRITE;
+use libc::SIGKILL;
+use libc::WNOHANG;
+use libc::_SC_IOV_MAX;
+use libc::_SC_PAGESIZE;
+pub use mmap::Error as MmapError;
 pub use mmap::*;
 pub use netlink::*;
 pub use poll::EventContext;
 pub use priority::*;
 pub use sched::*;
 pub use scoped_signal_handler::*;
-pub use shm::{kernel_has_memfd, MemfdSeals, SharedMemory, Unix as SharedMemoryUnix};
+pub use shm::MemfdSeals;
+pub use shm::SharedMemory;
+pub use shm::Unix as SharedMemoryUnix;
 pub use signal::*;
+pub use signalfd::Error as SignalFdError;
 pub use signalfd::*;
 pub use sock_ctrl_msg::*;
 pub use stream_channel::*;
 pub use terminal::*;
 pub use timer::*;
+pub(crate) use write_zeroes::file_punch_hole;
+pub(crate) use write_zeroes::file_write_zeroes_at;
 
-use crate::descriptor::{FromRawDescriptor, SafeDescriptor};
-pub use file_traits::{
-    AsRawFds, FileAllocate, FileGetLen, FileReadWriteAtVolatile, FileReadWriteVolatile, FileSetLen,
-    FileSync,
-};
-pub use mmap::Error as MmapError;
-pub use signalfd::Error as SignalFdError;
-pub(crate) use write_zeroes::{file_punch_hole, file_write_zeroes_at};
-pub(crate) use libc::{PROT_READ, PROT_WRITE};
-use std::{
-    cell::Cell,
-    convert::TryFrom,
-    ffi::CStr,
-    fs::{remove_file, File, OpenOptions},
-    mem,
-    ops::Deref,
-    os::unix::{
-        io::{AsRawFd, FromRawFd, RawFd},
-        net::{UnixDatagram, UnixListener},
-    },
-    path::Path,
-    ptr,
-    time::Duration,
-};
-
-use libc::{
-    c_int, c_long, fcntl, pipe2, syscall, sysconf, waitpid, SYS_getpid, SYS_gettid, EINVAL,
-    F_GETFL, F_SETFL, O_CLOEXEC, SIGKILL, WNOHANG, _SC_IOV_MAX, _SC_PAGESIZE,
-};
+use crate::descriptor::FromRawDescriptor;
+use crate::descriptor::SafeDescriptor;
+pub use crate::descriptor_reflection::deserialize_with_descriptors;
+pub use crate::descriptor_reflection::with_as_descriptor;
+pub use crate::descriptor_reflection::with_raw_descriptor;
+pub use crate::descriptor_reflection::FileSerdeWrapper;
+pub use crate::descriptor_reflection::SerializeDescriptors;
+pub use crate::errno::Error;
+pub use crate::errno::Result;
+pub use crate::errno::*;
 
 /// Re-export libc types that are part of the API.
 pub type Pid = libc::pid_t;
 pub type Uid = libc::uid_t;
 pub type Gid = libc::gid_t;
 pub type Mode = libc::mode_t;
-
-/// Used to mark types as !Sync.
-pub type UnsyncMarker = std::marker::PhantomData<Cell<usize>>;
 
 #[macro_export]
 macro_rules! syscall {
@@ -153,6 +169,13 @@ pub fn round_up_to_page_size(v: usize) -> usize {
 pub fn getpid() -> Pid {
     // Safe because this syscall can never fail and we give it a valid syscall number.
     unsafe { syscall(SYS_getpid as c_long) as Pid }
+}
+
+/// Safe wrapper for the geppid Linux systemcall.
+#[inline(always)]
+pub fn getppid() -> Pid {
+    // Safe because this syscall can never fail and we give it a valid syscall number.
+    unsafe { syscall(SYS_getppid as c_long) as Pid }
 }
 
 /// Safe wrapper for the gettid Linux systemcall.
@@ -292,39 +315,13 @@ impl AsRawPid for std::process::Child {
     }
 }
 
-/// A logical set of the values *status can take from libc::wait and libc::waitpid.
-pub enum WaitStatus {
-    Continued,
-    Exited(u8),
-    Running,
-    Signaled(Signal),
-    Stopped(Signal),
-}
-
-impl From<c_int> for WaitStatus {
-    fn from(status: c_int) -> WaitStatus {
-        use WaitStatus::*;
-        if libc::WIFEXITED(status) {
-            Exited(libc::WEXITSTATUS(status) as u8)
-        } else if libc::WIFSIGNALED(status) {
-            Signaled(Signal::try_from(libc::WTERMSIG(status)).unwrap())
-        } else if libc::WIFSTOPPED(status) {
-            Stopped(Signal::try_from(libc::WSTOPSIG(status)).unwrap())
-        } else if libc::WIFCONTINUED(status) {
-            Continued
-        } else {
-            Running
-        }
-    }
-}
-
 /// A safe wrapper around waitpid.
 ///
 /// On success if a process was reaped, it will be returned as the first value.
-/// The second returned value is the WaitStatus from the libc::waitpid() call.
+/// The second returned value is the ExitStatus from the libc::waitpid() call.
 ///
 /// Note: this can block if libc::WNOHANG is not set and EINTR is not handled internally.
-pub fn wait_for_pid<A: AsRawPid>(pid: A, options: c_int) -> Result<(Option<Pid>, WaitStatus)> {
+pub fn wait_for_pid<A: AsRawPid>(pid: A, options: c_int) -> Result<(Option<Pid>, ExitStatus)> {
     let pid = pid.as_raw_pid();
     let mut status: c_int = 1;
     // Safe because status is owned and the error is checked.
@@ -334,7 +331,7 @@ pub fn wait_for_pid<A: AsRawPid>(pid: A, options: c_int) -> Result<(Option<Pid>,
     }
     Ok((
         if ret == 0 { None } else { Some(ret) },
-        WaitStatus::from(status),
+        ExitStatus::from_raw(status),
     ))
 }
 
@@ -562,6 +559,7 @@ pub fn clear_fd_flags(fd: RawFd, clear_flags: c_int) -> Result<()> {
 }
 
 /// Return a timespec filed with the specified Duration `duration`.
+#[allow(clippy::useless_conversion)]
 pub fn duration_to_timespec(duration: Duration) -> libc::timespec {
     // nsec always fits in i32 because subsec_nanos is defined to be less than one billion.
     let nsec = duration.subsec_nanos() as i32;
@@ -635,7 +633,6 @@ pub fn number_of_logical_cores() -> Result<usize> {
 
 #[cfg(test)]
 mod tests {
-    use libc::EBADF;
     use std::io::Write;
 
     use super::*;
@@ -649,36 +646,5 @@ mod tests {
         add_fd_flags(tx.as_raw_fd(), libc::O_NONBLOCK).expect("Failed to set tx non blocking");
         tx.write(&[0u8; 8])
             .expect_err("Write after fill didn't fail");
-    }
-
-    #[test]
-    fn safe_descriptor_from_path_valid() {
-        assert!(safe_descriptor_from_path(Path::new("/proc/self/fd/2"))
-            .unwrap()
-            .is_some());
-    }
-
-    #[test]
-    fn safe_descriptor_from_path_invalid_integer() {
-        assert_eq!(
-            safe_descriptor_from_path(Path::new("/proc/self/fd/blah")),
-            Err(Error::new(EINVAL))
-        );
-    }
-
-    #[test]
-    fn safe_descriptor_from_path_invalid_fd() {
-        assert_eq!(
-            safe_descriptor_from_path(Path::new("/proc/self/fd/42")),
-            Err(Error::new(EBADF))
-        );
-    }
-
-    #[test]
-    fn safe_descriptor_from_path_none() {
-        assert_eq!(
-            safe_descriptor_from_path(Path::new("/something/else")).unwrap(),
-            None
-        );
     }
 }

@@ -489,17 +489,3 @@ macro_rules! volatile_at_impl {
 volatile_impl!(File);
 volatile_at_impl!(File);
 volatile_impl!(UnixStream);
-
-/// A trait similar to `AsRawFd` but supports an arbitrary number of file descriptors.
-pub trait AsRawFds {
-    fn as_raw_fds(&self) -> Vec<RawFd>;
-}
-
-impl<T> AsRawFds for T
-where
-    T: AsRawFd,
-{
-    fn as_raw_fds(&self) -> Vec<RawFd> {
-        vec![self.as_raw_fd()]
-    }
-}

@@ -9,7 +9,7 @@ use crate::EventToken;
 
 /// Represents descriptor-token pairs which represent an event which can be triggered in the
 /// EventContext
-#[derive(PartialEq)]
+#[derive(PartialEq, Eq)]
 pub struct EventTrigger<T: EventToken> {
     pub(crate) token: T,
     pub(crate) event: RawDescriptor,
@@ -42,8 +42,8 @@ mod tests {
     fn event_context() {
         let evt1 = Event::new().unwrap();
         let evt2 = Event::new().unwrap();
-        evt1.write(1).unwrap();
-        evt2.write(1).unwrap();
+        evt1.signal().unwrap();
+        evt2.signal().unwrap();
         let ctx: EventContext<u32> =
             EventContext::build_with(&[EventTrigger::from(&evt1, 1), EventTrigger::from(&evt2, 2)])
                 .unwrap();
@@ -54,11 +54,11 @@ mod tests {
                 evt_count += 1;
                 match event.token {
                     1 => {
-                        evt1.read().unwrap();
+                        evt1.wait().unwrap();
                         ctx.delete(&evt1).unwrap();
                     }
                     2 => {
-                        evt2.read().unwrap();
+                        evt2.wait().unwrap();
                         ctx.delete(&evt2).unwrap();
                     }
                     _ => panic!("unexpected token"),
@@ -77,14 +77,14 @@ mod tests {
     //     let mut evts = Vec::with_capacity(EVT_COUNT);
     //     for i in 0..EVT_COUNT {
     //         let evt = Event::new().unwrap();
-    //         evt.write(1).unwrap();
+    //         evt.signal().unwrap();
     //         ctx.add(&evt, i).unwrap();
     //         evts.push(evt);
     //     }
     //     let mut evt_count = 0;
     //     while evt_count < EVT_COUNT {
     //         for event in ctx.wait().unwrap().iter_readable() {
-    //             evts[event.token()].read().unwrap();
+    //             evts[event.token()].wait().unwrap();
     //             evt_count += 1;
     //         }
     //     }
@@ -106,9 +106,9 @@ mod tests {
         let evt1 = Event::new().unwrap();
         let evt2 = Event::new().unwrap();
         let evt3 = Event::new().unwrap();
-        evt1.write(1).expect("Failed to write to event.");
-        evt2.write(1).expect("Failed to write to event.");
-        evt3.write(1).expect("Failed to write to event.");
+        evt1.signal().expect("Failed to write to event.");
+        evt2.signal().expect("Failed to write to event.");
+        evt3.signal().expect("Failed to write to event.");
         let ctx: EventContext<u32> = EventContext::build_with(&[
             EventTrigger::from(&evt1, 1),
             EventTrigger::from(&evt2, 2),
@@ -131,10 +131,10 @@ mod tests {
         let evt5 = Event::new().unwrap();
         let evt6 = Event::new().unwrap();
         let evt7 = Event::new().unwrap();
-        evt1.write(1).unwrap();
-        evt2.write(1).unwrap();
-        evt4.write(1).unwrap();
-        evt7.write(1).unwrap();
+        evt1.signal().unwrap();
+        evt2.signal().unwrap();
+        evt4.signal().unwrap();
+        evt7.signal().unwrap();
         let ctx: EventContext<u32> = EventContext::build_with(&[
             EventTrigger::from(&evt1, 1),
             EventTrigger::from(&evt2, 2),

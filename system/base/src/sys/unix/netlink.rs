@@ -71,7 +71,7 @@ pub struct NlAttrWithData<'a> {
 }
 
 fn nlattr_align(offset: usize) -> usize {
-    return (offset + NLATTR_ALIGN_TO - 1) & !(NLATTR_ALIGN_TO - 1);
+    (offset + NLATTR_ALIGN_TO - 1) & !(NLATTR_ALIGN_TO - 1)
 }
 
 /// Iterator over `struct NlAttr` as received from a netlink socket.

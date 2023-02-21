@@ -2,12 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-
+use base::MemfdSeals;
+use base::MemoryMappingUnix;
+use base::SharedMemory;
+use base::SharedMemoryUnix;
 use bitflags::bitflags;
 
-use base::{MemfdSeals, MemoryMappingUnix, SharedMemory, SharedMemoryUnix};
-
-use crate::{Error, GuestAddress, GuestMemory, Result};
+use crate::Error;
+use crate::GuestAddress;
+use crate::GuestMemory;
+use crate::Result;
 
 bitflags! {
     pub struct MemoryPolicy: u32 {
@@ -34,11 +38,10 @@ impl GuestMemory {
     ///
     /// This feature is only available on Unix, where a MemoryMapping can remove a mapped range.
     pub fn remove_range(&self, addr: GuestAddress, count: u64) -> Result<()> {
-        self.do_in_region(addr, move |mapping, offset, _| {
-            mapping
-                .remove_range(offset, count as usize)
-                .map_err(|e| Error::MemoryAccess(addr, e))
-        })
+        let (mapping, offset, _) = self.find_region(addr)?;
+        mapping
+            .remove_range(offset, count as usize)
+            .map_err(|e| Error::MemoryAccess(addr, e))
     }
 
     /// Handles guest memory policy hints/advices.
@@ -69,5 +72,12 @@ impl GuestMemory {
                 }
             }
         }
+    }
+
+    pub fn use_dontfork(&self) -> anyhow::Result<()> {
+        for region in self.regions.iter() {
+            region.mapping.use_dontfork()?;
+        }
+        Ok(())
     }
 }

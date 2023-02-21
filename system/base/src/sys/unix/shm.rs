@@ -288,23 +288,6 @@ impl From<SharedMemory> for File {
     }
 }
 
-/// Checks if the kernel we are running on has memfd_create. It was introduced in 3.17.
-/// Only to be used from tests to prevent running on ancient kernels that won't
-/// support the functionality anyways.
-pub fn kernel_has_memfd() -> bool {
-    unsafe {
-        let fd = memfd_create(b"/test_memfd_create\0".as_ptr() as *const c_char, 0);
-        if fd < 0 {
-            if Error::last().errno() == libc::ENOSYS {
-                return false;
-            }
-            return true;
-        }
-        close(fd);
-    }
-    true
-}
-
 pub trait Unix {
     fn from_file(file: File) -> Result<CrateSharedMemory> {
         SharedMemory::from_file(file).map(CrateSharedMemory)
@@ -327,13 +310,12 @@ impl Unix for CrateSharedMemory {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
     use std::ffi::CString;
 
     use data_model::VolatileMemory;
 
-    use super::super::MemoryMapping;
+    use super::SharedMemory;
+    use crate::MemoryMappingBuilder;
 
     fn create_test_shmem() -> SharedMemory {
         let name = CString::new("test").expect("failed to create cstr name");
@@ -342,9 +324,6 @@ mod tests {
 
     #[test]
     fn new() {
-        if !kernel_has_memfd() {
-            return;
-        }
         const TEST_NAME: &str = "Name McCool Person";
         let name = CString::new(TEST_NAME).expect("failed to create cstr name");
         let shm = SharedMemory::new(&name, 0).expect("failed to create shared memory");
@@ -353,9 +332,6 @@ mod tests {
 
     #[test]
     fn new_sized() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         shm.set_size(1024)
             .expect("failed to set shared memory size");
@@ -364,9 +340,6 @@ mod tests {
 
     #[test]
     fn new_huge() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         shm.set_size(0x7fff_ffff_ffff_ffff)
             .expect("failed to set shared memory size");
@@ -375,9 +348,6 @@ mod tests {
 
     #[test]
     fn new_too_huge() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         shm.set_size(0x8000_0000_0000_0000).unwrap_err();
         assert_eq!(shm.size(), 0);
@@ -385,9 +355,6 @@ mod tests {
 
     #[test]
     fn new_sealed() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         let mut seals = shm.get_seals().expect("failed to get seals");
         assert_eq!(seals.bitmask(), 0);
@@ -401,17 +368,19 @@ mod tests {
 
     #[test]
     fn mmap_page() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         shm.set_size(4096)
             .expect("failed to set shared memory size");
+        let shm = crate::SharedMemory(shm);
 
-        let mmap1 =
-            MemoryMapping::from_fd(&shm, shm.size() as usize).expect("failed to map shared memory");
-        let mmap2 =
-            MemoryMapping::from_fd(&shm, shm.size() as usize).expect("failed to map shared memory");
+        let mmap1 = MemoryMappingBuilder::new(shm.size() as usize)
+            .from_shared_memory(&shm)
+            .build()
+            .expect("failed to map shared memory");
+        let mmap2 = MemoryMappingBuilder::new(shm.size() as usize)
+            .from_shared_memory(&shm)
+            .build()
+            .expect("failed to map shared memory");
 
         assert_ne!(
             mmap1.get_slice(0, 1).unwrap().as_ptr(),
@@ -424,23 +393,26 @@ mod tests {
             .write_bytes(0x45);
 
         for i in 0..4096 {
-            assert_eq!(mmap2.get_ref::<u8>(i).unwrap().load(), 0x45u8);
+            assert_eq!(mmap2.read_obj::<u8>(i).unwrap(), 0x45u8);
         }
     }
 
     #[test]
     fn mmap_page_offset() {
-        if !kernel_has_memfd() {
-            return;
-        }
         let mut shm = create_test_shmem();
         shm.set_size(8092)
             .expect("failed to set shared memory size");
+        let shm = crate::SharedMemory(shm);
 
-        let mmap1 = MemoryMapping::from_fd_offset(&shm, shm.size() as usize, 4096)
+        let mmap1 = MemoryMappingBuilder::new(shm.size() as usize)
+            .from_shared_memory(&shm)
+            .offset(4096)
+            .build()
             .expect("failed to map shared memory");
-        let mmap2 =
-            MemoryMapping::from_fd(&shm, shm.size() as usize).expect("failed to map shared memory");
+        let mmap2 = MemoryMappingBuilder::new(shm.size() as usize)
+            .from_shared_memory(&shm)
+            .build()
+            .expect("failed to map shared memory");
 
         mmap1
             .get_slice(0, 4096)
@@ -448,10 +420,10 @@ mod tests {
             .write_bytes(0x45);
 
         for i in 0..4096 {
-            assert_eq!(mmap2.get_ref::<u8>(i).unwrap().load(), 0);
+            assert_eq!(mmap2.read_obj::<u8>(i).unwrap(), 0);
         }
         for i in 4096..8092 {
-            assert_eq!(mmap2.get_ref::<u8>(i).unwrap().load(), 0x45u8);
+            assert_eq!(mmap2.read_obj::<u8>(i).unwrap(), 0x45u8);
         }
     }
 }

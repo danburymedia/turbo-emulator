@@ -1,6 +1,7 @@
 use std::os::unix::thread::JoinHandleExt;
 use std::sync::Arc;
-use base::{EventFd, get_blocked_signals, gettid};
+use base::{get_blocked_signals, gettid};
+use base::platform::eventfd::EventFd;
 use libc::{CLONE_CHILD_CLEARTID, CLONE_CHILD_SETTID, CLONE_PARENT_SETTID, CLONE_SETTLS, fork, getpid, sysinfo, vfork};
 use sync::Mutex;
 use crate::common::memory::MemEndian;

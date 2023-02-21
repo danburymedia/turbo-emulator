@@ -2,27 +2,39 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use std::{
-    io::{
-        Cursor, Read, Write, {self},
-    },
-    time::Duration,
-};
+use std::io;
+use std::io::Cursor;
+use std::io::Read;
+use std::io::Write;
+use std::mem;
+use std::os::windows::io::AsRawHandle;
+use std::os::windows::io::RawHandle;
+use std::time::Duration;
 
-use crate::descriptor::{AsRawDescriptor, FromRawDescriptor, SafeDescriptor};
-use crate::{
-    platform::{deserialize_with_descriptors, RawDescriptor, SerializeDescriptors},
-    tube::{Error, RecvTube, Result, SendTube},
-    BlockingMode, CloseNotifier, EventToken, FramingMode, ReadNotifier, StreamChannel,
-};
 use data_model::DataInit;
 use once_cell::sync::Lazy;
-use serde::{de::DeserializeOwned, Deserialize, Serialize, Serializer};
-use std::{
-    mem,
-    os::windows::io::{AsRawHandle, RawHandle},
-};
+use serde::de::DeserializeOwned;
+use serde::Deserialize;
+use serde::Serialize;
+use serde::Serializer;
 use winapi::shared::winerror::ERROR_MORE_DATA;
+
+use crate::descriptor::AsRawDescriptor;
+use crate::descriptor::FromRawDescriptor;
+use crate::descriptor::SafeDescriptor;
+use crate::platform::deserialize_with_descriptors;
+use crate::platform::RawDescriptor;
+use crate::platform::SerializeDescriptors;
+use crate::tube::Error;
+use crate::tube::RecvTube;
+use crate::tube::Result;
+use crate::tube::SendTube;
+use crate::BlockingMode;
+use crate::CloseNotifier;
+use crate::EventToken;
+use crate::FramingMode;
+use crate::ReadNotifier;
+use crate::StreamChannel;
 
 /// Bidirectional tube that support both send and recv.
 ///

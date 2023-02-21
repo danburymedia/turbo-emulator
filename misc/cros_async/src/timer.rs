@@ -2,9 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-use crate::{AsyncResult, Error, Executor, IntoAsync, IoSourceExt};
-use base::{Result as SysResult, Timer};
 use std::time::Duration;
+
+use base::Result as SysResult;
+use base::Timer;
+
+use crate::AsyncResult;
+use crate::Error;
+use crate::Executor;
+use crate::IntoAsync;
+use crate::IoSourceExt;
 
 /// An async version of base::Timer.
 pub struct TimerAsync {
@@ -37,8 +44,8 @@ impl TimerAsync {
         Ok(())
     }
 
-    /// Sets the timer to expire after `dur`.  If `interval` is not `None` it represents
-    /// the period for repeated expirations after the initial expiration.  Otherwise
+    /// Sets the timer to expire after `dur`.  If `interval` is not `None` and non-zero it
+    /// represents the period for repeated expirations after the initial expiration.  Otherwise
     /// the timer will expire just once.  Cancels any existing duration and repeating interval.
     pub fn reset(&mut self, dur: Duration, interval: Option<Duration>) -> SysResult<()> {
         self.io_source.as_source_mut().reset(dur, interval)

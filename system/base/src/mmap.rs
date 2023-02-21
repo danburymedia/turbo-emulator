@@ -20,7 +20,8 @@ use libc::{c_int, PROT_EXEC};
 use serde::{Deserialize, Serialize};
 use data_model::{volatile_memory::*, DataInit};
 use std::fs::File;
-
+use zerocopy::AsBytes;
+use zerocopy::FromBytes;
 pub type Result<T> = std::result::Result<T, Error>;
 /// Memory access type for anonymous shared memory mapping.
 #[derive(Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Debug)]
@@ -150,7 +151,7 @@ impl MemoryMapping {
     ///     let res = mem_map.write_obj(55u64, 16);
     ///     assert!(res.is_ok());
     /// ```
-    pub fn write_obj<T: DataInit>(&self, val: T, offset: usize) -> Result<()> {
+    pub fn write_obj<T: AsBytes>(&self, val: T, offset: usize) -> Result<()> {
         self.mapping.range_end(offset, size_of::<T>())?;
         // This is safe because we checked the bounds above.
         unsafe {
@@ -178,7 +179,7 @@ impl MemoryMapping {
     ///     let num: u64 = mem_map.read_obj(32).unwrap();
     ///     assert_eq!(55, num);
     /// ```
-    pub fn read_obj<T: DataInit>(&self, offset: usize) -> Result<T> {
+    pub fn read_obj<T: FromBytes>(&self, offset: usize) -> Result<T> {
         self.mapping.range_end(offset, size_of::<T>())?;
         // This is safe because by definition Copy types can have their bits set arbitrarily and
         // still be valid.
@@ -205,7 +206,7 @@ impl MemoryMapping {
     ///     let res = mem_map.write_obj_volatile(0xf00u32, 16);
     ///     assert!(res.is_ok());
     /// ```
-    pub fn write_obj_volatile<T: DataInit>(&self, val: T, offset: usize) -> Result<()> {
+    pub fn write_obj_volatile<T: AsBytes>(&self, val: T, offset: usize) -> Result<()> {
         self.mapping.range_end(offset, size_of::<T>())?;
         // Make sure writes to memory have been committed before performing I/O that could
         // potentially depend on them.
@@ -237,7 +238,7 @@ impl MemoryMapping {
     ///     let num: u32 = mem_map.read_obj(16).unwrap();
     ///     assert_eq!(0xf00, num);
     /// ```
-    pub fn read_obj_volatile<T: DataInit>(&self, offset: usize) -> Result<T> {
+    pub fn read_obj_volatile<T: FromBytes>(&self, offset: usize) -> Result<T> {
         self.mapping.range_end(offset, size_of::<T>())?;
         // This is safe because by definition Copy types can have their bits set arbitrarily and
         // still be valid.

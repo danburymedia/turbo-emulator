@@ -1,6 +1,7 @@
-// Copyright 2019 The Chromium OS Authors. All rights reserved.
+// Copyright 2019 The ChromiumOS Authors
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
+
 //! ```
 //! use audio_streams::{BoxError, capture::CaptureBuffer, SampleFormat, StreamSource,
 //!     NoopStreamSource};
@@ -30,18 +31,23 @@
 //! # }
 //! ```
 
-use async_trait::async_trait;
-use std::{
-    io::{self, Read, Write},
-    time::{Duration, Instant},
-};
+use std::io;
+use std::io::Read;
+use std::io::Write;
+use std::time::Duration;
+use std::time::Instant;
 
-use super::async_api::AudioStreamsExecutor;
-use super::{
-    AsyncBufferCommit, AudioBuffer, BoxError, BufferCommit, NoopBufferCommit, SampleFormat,
-};
+use async_trait::async_trait;
 use remain::sorted;
 use thiserror::Error;
+
+use super::async_api::AudioStreamsExecutor;
+use super::AsyncBufferCommit;
+use super::AudioBuffer;
+use super::BoxError;
+use super::BufferCommit;
+use super::NoopBufferCommit;
+use super::SampleFormat;
 
 /// `CaptureBufferStream` provides `CaptureBuffer`s to read with audio samples from capture.
 pub trait CaptureBufferStream: Send {
@@ -308,10 +314,11 @@ where
 
 #[cfg(test)]
 mod tests {
+    use futures::FutureExt;
+
     use super::super::async_api::test::TestExecutor;
     use super::super::*;
     use super::*;
-    use futures::FutureExt;
 
     #[test]
     fn invalid_buffer_length() {

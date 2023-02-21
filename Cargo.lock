@@ -126,6 +126,7 @@ dependencies = [
  "async-trait",
  "futures",
  "remain",
+ "serde",
  "thiserror",
 ]
 
@@ -168,6 +169,7 @@ dependencies = [
  "uuid",
  "win_util",
  "winapi",
+ "zerocopy",
 ]
 
 [[package]]
@@ -226,6 +228,12 @@ name = "bumpalo"
 version = "3.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0d261e256854913907f67ed06efbc3338dfe6179796deefc1ff763fc1aee5535"
+
+[[package]]
+name = "byteorder"
+version = "1.4.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14c189c53d098945499cdfa7ecc63567cf3886b3332b312a5b4585d8d3a6a610"
 
 [[package]]
 name = "cc"
@@ -346,6 +354,7 @@ dependencies = [
  "pin-utils",
  "remain",
  "serde",
+ "serde_keyvalue",
  "slab",
  "smallvec",
  "sync",
@@ -1434,6 +1443,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 name = "vm_memory"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "base",
  "bitflags",
  "cfg-if 1.0.0",
@@ -1442,7 +1452,9 @@ dependencies = [
  "libc",
  "remain",
  "serde",
+ "serde_json",
  "thiserror",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1596,4 +1608,25 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "05f360fc0b24296329c78fda852a1e9ae82de9cf7b27dae4b7f62f118f77b9ed"
 dependencies = [
  "tap",
+]
+
+[[package]]
+name = "zerocopy"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "332f188cc1bcf1fe1064b8c58d150f497e697f49774aa846f2dc949d9a25f236"
+dependencies = [
+ "byteorder",
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6505e6815af7de1746a08f69c69606bb45695a17149517680f3b2149713b19a3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]

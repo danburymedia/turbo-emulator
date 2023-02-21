@@ -70,6 +70,7 @@ mod select;
 pub mod sync;
 pub mod sys;
 pub use sys::Executor;
+pub use sys::ExecutorKind;
 mod timer;
 mod waker;
 
@@ -101,6 +102,7 @@ pub use io_ext::Result as AsyncResult;
 pub use io_ext::WriteAsync;
 pub use mem::BackingMemory;
 pub use mem::MemRegion;
+pub use mem::VecIoWrapper;
 use remain::sorted;
 pub use select::SelectResult;
 pub use sys::run_one;

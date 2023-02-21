@@ -5,6 +5,7 @@
 use std::os::unix::io::AsRawFd;
 
 use libc::{fcntl, EINVAL, F_GETFL, O_ACCMODE, O_RDONLY, O_RDWR, O_WRONLY};
+use crate::AsRawDescriptor;
 
 use super::{errno_result, Error, Result};
 
@@ -16,10 +17,10 @@ pub enum FileFlags {
 }
 
 impl FileFlags {
-    pub fn from_file(file: &dyn AsRawFd) -> Result<FileFlags> {
+    pub fn from_file(file: &dyn AsRawDescriptor) -> Result<FileFlags> {
         // Trivially safe because fcntl with the F_GETFL command is totally safe and we check for
         // error.
-        let flags = unsafe { fcntl(file.as_raw_fd(), F_GETFL) };
+        let flags = unsafe { fcntl(file.as_raw_descriptor(), F_GETFL) };
         if flags == -1 {
             errno_result()
         } else {

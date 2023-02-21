@@ -236,8 +236,6 @@ impl<T: EventToken> EventContext<T> {
                     is_readable: e.events & (EPOLLIN as u32) != 0,
                     is_writable: e.events & (EPOLLOUT as u32) != 0,
                     is_hungup: e.events & ((EPOLLHUP | EPOLLRDHUP) as u32) != 0,
-                    is_err: e.events & (EPOLLERR as u32) != 0,
-                    is_pri: e.events & (EPOLLPRI as u32) != 0,
                 }
             })
             .collect();
@@ -261,8 +259,8 @@ mod tests {
     fn event_context() {
         let evt1 = Event::new().unwrap();
         let evt2 = Event::new().unwrap();
-        evt1.write(1).unwrap();
-        evt2.write(1).unwrap();
+        evt1.signal().unwrap();
+        evt2.signal().unwrap();
         let ctx: EventContext<u32> = EventContext::build_with(&[(&evt1, 1), (&evt2, 2)]).unwrap();
 
         let mut evt_count = 0;
@@ -271,11 +269,11 @@ mod tests {
                 evt_count += 1;
                 match event.token {
                     1 => {
-                        evt1.read().unwrap();
+                        evt1.wait().unwrap();
                         ctx.delete(&evt1).unwrap();
                     }
                     2 => {
-                        evt2.read().unwrap();
+                        evt2.wait().unwrap();
                         ctx.delete(&evt2).unwrap();
                     }
                     _ => panic!("unexpected token"),
@@ -292,14 +290,14 @@ mod tests {
         let mut evts = Vec::with_capacity(EVT_COUNT);
         for i in 0..EVT_COUNT {
             let evt = Event::new().unwrap();
-            evt.write(1).unwrap();
+            evt.signal().unwrap();
             ctx.add(&evt, i).unwrap();
             evts.push(evt);
         }
         let mut evt_count = 0;
         while evt_count < EVT_COUNT {
             for event in ctx.wait().unwrap().iter().filter(|e| e.is_readable) {
-                evts[event.token].read().unwrap();
+                evts[event.token].wait().unwrap();
                 evt_count += 1;
             }
         }

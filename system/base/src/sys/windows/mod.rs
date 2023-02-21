@@ -87,9 +87,6 @@ pub type Uid = uid_t;
 pub type Gid = gid_t;
 pub type Mode = mode_t;
 
-/// Used to mark types as !Sync.
-pub type UnsyncMarker = std::marker::PhantomData<Cell<usize>>;
-
 /// Uses the system's page size in bytes to round the given value up to the nearest page boundary.
 #[inline(always)]
 pub fn round_up_to_page_size(v: usize) -> usize {

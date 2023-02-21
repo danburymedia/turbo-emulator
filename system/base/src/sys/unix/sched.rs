@@ -39,15 +39,12 @@ impl CpuSet {
 
 impl FromIterator<usize> for CpuSet {
     fn from_iter<I: IntoIterator<Item = usize>>(cpus: I) -> Self {
-        // cpu_set_t is a C struct and can be safely initialized with zeroed memory.
-        let mut cpuset: cpu_set_t = unsafe { mem::zeroed() };
-        // Safe because we pass a valid cpuset pointer.
-        unsafe { CPU_ZERO(&mut cpuset) };
+        let mut cpuset = CpuSet::new();
         for cpu in cpus {
-            // Safe because we pass a valid cpuset pointer and cpu index.
-            unsafe { CPU_SET(cpu, &mut cpuset) };
+            // Safe because we pass a valid cpu index and cpuset.0 is a valid pointer.
+            unsafe { CPU_SET(cpu, &mut cpuset.0) };
         }
-        CpuSet(cpuset)
+        cpuset
     }
 }
 
@@ -76,13 +73,9 @@ pub fn set_cpu_affinity<I: IntoIterator<Item = usize>>(cpus: I) -> Result<()> {
 
     // Safe because we pass 0 for the current thread, and cpuset is a valid pointer and only
     // used for the duration of this call.
-    let res = unsafe { sched_setaffinity(0, mem::size_of_val(&cpuset), &cpuset) };
+    crate::syscall!(unsafe { sched_setaffinity(0, mem::size_of_val(&cpuset), &cpuset) })?;
 
-    if res != 0 {
-        errno_result()
-    } else {
-        Ok(())
-    }
+    Ok(())
 }
 
 pub fn get_cpu_affinity() -> Result<Vec<usize>> {
@@ -115,7 +108,7 @@ pub fn enable_core_scheduling() -> Result<()> {
         PIDTYPE_PGID,
     }
 
-    let ret = match unsafe {
+    let ret = unsafe {
         prctl(
             PR_SCHED_CORE,
             PR_SCHED_CORE_CREATE,
@@ -123,14 +116,6 @@ pub fn enable_core_scheduling() -> Result<()> {
             pid_type::PIDTYPE_PID as i32, // PID scopes to this thread only
             0,                            // ignored by PR_SCHED_CORE_CREATE command
         )
-    } {
-        #[cfg(feature = "chromeos")]
-        -1 => {
-            // Chrome OS has an pre-upstream version of this functionality which might work.
-            const PR_SET_CORE_SCHED: i32 = 0x200;
-            unsafe { prctl(PR_SET_CORE_SCHED, 1) }
-        }
-        ret => ret,
     };
     if ret == -1 {
         let error = Error::last();

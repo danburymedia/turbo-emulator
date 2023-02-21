@@ -44,7 +44,10 @@ impl SharedMemory {
         Ok(SharedMemory {
             descriptor: mapping_handle,
             size,
-            mapping,
+            mapping: CrateMemoryMapping {
+                mapping,
+                _file_descriptor: None,
+            },
             cursor: 0,
         })
     }

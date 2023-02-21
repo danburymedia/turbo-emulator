@@ -169,7 +169,7 @@ pub trait ReadOverlapped {
     fn try_read_result(&mut self, overlapped_wrapper: &mut OverlappedWrapper) -> io::Result<usize>;
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq)]
 pub enum FramingMode {
     Byte,
     Message,
@@ -191,7 +191,7 @@ impl FramingMode {
     }
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Debug)]
+#[derive(Serialize, Deserialize, Copy, Clone, PartialEq, Debug, Eq)]
 pub enum BlockingMode {
     /// Calls to read() block until data is received
     Wait,
@@ -581,9 +581,7 @@ impl PipeConnection {
                 // ERROR_IO_PENDING, according the to docs, isn't really an error. This just means
                 // that the ReadFile operation hasn't completed. In this case,
                 // `get_overlapped_result` will wait until the operation is completed.
-                Some(error_code) if error_code == ERROR_IO_PENDING as i32 && is_overlapped => {
-                    return Ok(0);
-                }
+                Some(error_code) if error_code == ERROR_IO_PENDING as i32 && is_overlapped => Ok(0),
                 _ => Err(e),
             }
         } else {

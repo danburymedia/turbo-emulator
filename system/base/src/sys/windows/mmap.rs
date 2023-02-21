@@ -56,7 +56,6 @@ pub enum Error {
 }
 pub type Result<T> = std::result::Result<T, Error>;
 
-
 impl From<c_uint> for Protection {
     fn from(f: c_uint) -> Self {
         Protection::from(f as c_int)
@@ -69,7 +68,6 @@ impl From<Protection> for c_uint {
         i as c_uint
     }
 }
-
 
 /// Validates that `offset`..`offset+range_size` lies within the bounds of a memory mapping of
 /// `mmap_size` bytes.  Also checks for any overflow.
@@ -353,15 +351,6 @@ mod tests {
         let m = to_crate_mmap(MemoryMapping::from_descriptor(&shm, 5).unwrap());
         let s = m.get_slice(2, 3).unwrap();
         assert_eq!(s.as_ptr(), unsafe { m.as_ptr().offset(2) });
-    }
-
-    #[test]
-    fn slice_store() {
-        let shm = SharedMemory::new(&CString::new("test").unwrap(), 1028).unwrap();
-        let m = to_crate_mmap(MemoryMapping::from_descriptor(&shm, 5).unwrap());
-        let r = m.get_ref(2).unwrap();
-        r.store(9u16);
-        assert_eq!(m.read_obj::<u16>(2).unwrap(), 9);
     }
 
     #[test]

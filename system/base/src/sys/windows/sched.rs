@@ -25,6 +25,9 @@ use super::{errno_result, Error, Result};
 pub fn set_cpu_affinity<I: IntoIterator<Item = usize>>(cpus: I) -> Result<usize> {
     let mut affinity_mask: usize = 0;
     for cpu in cpus {
+        if cpu >= 64 {
+            return Err(Error::new(EINVAL));
+        }
         affinity_mask |= 1 << cpu;
     }
     set_cpu_affinity_mask(affinity_mask)

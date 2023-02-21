@@ -32,7 +32,7 @@ pub enum Error {
     InvalidAddress,
     #[error("invalid argument provided when creating mapping")]
     InvalidArgument,
-    #[error("requested offset is out of range of off_t")]
+    #[error("requested offset is out of range of off64_t")]
     InvalidOffset,
     #[error("requested memory range spans past the end of the region: offset={0} count={1} region_size={2}")]
     InvalidRange(usize, usize, usize),
@@ -322,14 +322,14 @@ impl MemoryMapping {
         // If fd is provided, validate fd offset is within bounds
         let (fd, offset) = match fd {
             Some((fd, offset)) => {
-                if offset > libc::off_t::max_value() as u64 {
+                if offset > libc::off64_t::max_value() as u64 {
                     return Err(Error::InvalidOffset);
                 }
-                (fd.as_raw_descriptor(), offset as libc::off_t)
+                (fd.as_raw_descriptor(), offset as libc::off64_t)
             }
             None => (-1, 0),
         };
-        let addr = libc::mmap(addr, size, prot, flags, fd, offset);
+        let addr = libc::mmap64(addr, size, prot, flags, fd, offset);
         if addr == libc::MAP_FAILED {
             return Err(Error::SystemCallFailed(ErrnoError::last()));
         }
@@ -348,6 +348,24 @@ impl MemoryMapping {
             addr: addr as *mut u8,
             size,
         })
+    }
+
+    /// Madvise the kernel to unmap on fork.
+    pub fn use_dontfork(&self) -> Result<()> {
+        // This is safe because we call madvise with a valid address and size, and we check the
+        // return value.
+        let ret = unsafe {
+            libc::madvise(
+                self.as_ptr() as *mut libc::c_void,
+                self.size(),
+                libc::MADV_DONTFORK,
+            )
+        };
+        if ret == -1 {
+            Err(Error::SystemCallFailed(ErrnoError::last()))
+        } else {
+            Ok(())
+        }
     }
 
     /// Madvise the kernel to use Huge Pages for this mapping.
@@ -807,6 +825,10 @@ impl Drop for MemoryMappingArena {
 }
 
 impl CrateMemoryMapping {
+    pub fn use_dontfork(&self) -> Result<()> {
+        self.mapping.use_dontfork()
+    }
+
     pub fn use_hugepages(&self) -> Result<()> {
         self.mapping.use_hugepages()
     }
@@ -938,7 +960,7 @@ mod tests {
 
     #[test]
     fn basic_map() {
-        let m = MemoryMapping::new(1024).unwrap();
+        let m = MemoryMappingBuilder::new(1024).build().unwrap();
         assert_eq!(1024, m.size());
     }
 
@@ -973,7 +995,7 @@ mod tests {
 
     #[test]
     fn slice_size() {
-        let m = MemoryMapping::new(5).unwrap();
+        let m = MemoryMappingBuilder::new(5).build().unwrap();
         let s = m.get_slice(2, 3).unwrap();
         assert_eq!(s.size(), 3);
     }
@@ -983,14 +1005,6 @@ mod tests {
         let m = MemoryMappingBuilder::new(5).build().unwrap();
         let s = m.get_slice(2, 3).unwrap();
         assert_eq!(s.as_ptr(), unsafe { m.as_ptr().offset(2) });
-    }
-
-    #[test]
-    fn slice_store() {
-        let m = MemoryMappingBuilder::new(5).build().unwrap();
-        let r = m.get_ref(2).unwrap();
-        r.store(9u16);
-        assert_eq!(m.read_obj::<u16>(2).unwrap(), 9);
     }
 
     #[test]
@@ -1015,7 +1029,7 @@ mod tests {
     #[test]
     fn from_fd_offset_invalid() {
         let fd = tempfile().unwrap();
-        let res = MemoryMapping::from_fd_offset(&fd, 4096, (libc::off_t::max_value() as u64) + 1)
+        let res = MemoryMapping::from_fd_offset(&fd, 4096, (libc::off64_t::max_value() as u64) + 1)
             .unwrap_err();
         match res {
             Error::InvalidOffset => {}

@@ -428,8 +428,10 @@ mod tests {
 
     use libc::cmsghdr;
 
-    use super::super::Event;
     use super::*;
+    use crate::AsRawDescriptor;
+    use crate::Event;
+    use crate::EventExt;
 
     // Doing this as a macro makes it easier to see the line if it fails
     macro_rules! CMSG_SPACE_TEST {
@@ -494,7 +496,7 @@ mod tests {
         let evt = Event::new().expect("failed to create event");
         let ioslice = IoSlice::new([].as_ref());
         let write_count = s1
-            .send_with_fd(&[ioslice], evt.as_raw_fd())
+            .send_with_fd(&[ioslice], evt.as_raw_descriptor())
             .expect("failed to send fd");
 
         assert_eq!(write_count, 0);
@@ -510,12 +512,12 @@ mod tests {
         assert!(file.as_raw_fd() >= 0);
         assert_ne!(file.as_raw_fd(), s1.as_raw_fd());
         assert_ne!(file.as_raw_fd(), s2.as_raw_fd());
-        assert_ne!(file.as_raw_fd(), evt.as_raw_fd());
+        assert_ne!(file.as_raw_fd(), evt.as_raw_descriptor());
 
         file.write_all(unsafe { from_raw_parts(&1203u64 as *const u64 as *const u8, 8) })
             .expect("failed to write to sent fd");
 
-        assert_eq!(evt.read().expect("failed to read from event"), 1203);
+        assert_eq!(evt.read_count().expect("failed to read from event"), 1203);
     }
 
     #[test]
@@ -525,7 +527,7 @@ mod tests {
         let evt = Event::new().expect("failed to create event");
         let ioslice = IoSlice::new([237].as_ref());
         let write_count = s1
-            .send_with_fds(&[ioslice], &[evt.as_raw_fd()])
+            .send_with_fds(&[ioslice], &[evt.as_raw_descriptor()])
             .expect("failed to send fd");
 
         assert_eq!(write_count, 1);
@@ -542,13 +544,13 @@ mod tests {
         assert!(files[0] >= 0);
         assert_ne!(files[0], s1.as_raw_fd());
         assert_ne!(files[0], s2.as_raw_fd());
-        assert_ne!(files[0], evt.as_raw_fd());
+        assert_ne!(files[0], evt.as_raw_descriptor());
 
         let mut file = unsafe { File::from_raw_fd(files[0]) };
 
         file.write_all(unsafe { from_raw_parts(&1203u64 as *const u64 as *const u8, 8) })
             .expect("failed to write to sent fd");
 
-        assert_eq!(evt.read().expect("failed to read from event"), 1203);
+        assert_eq!(evt.read_count().expect("failed to read from event"), 1203);
     }
 }
