@@ -17,3 +17,11 @@ To report a user mode emulation bug, run the emulator with the "--log-level debu
 It is not required but highly recommended that we know what the program is, to aid in the fixing of the bugs.  If the program is not already publicly available on the internet, then a compiled version (preferably with debugging symbols/info included) can be uploaded to a file host of your choice for us to look at.
 
 In general, the more info we are able to use to reproduce the bug, the faster we are able to fix it.
+
+## Currently supported features
+* RISC-V GC extensions . Support for the vector support is planned.
+* AArch64 - currently all the basic arithmetic instructions, along with most floating point instructions, are implemented. SIMD support is still incomplete and a work in progress.
+
+## TODO
+* Work on JIT backend and frontends
+* System-level emulation.
