@@ -20,6 +20,8 @@ fn read_csr(ri: &mut RiscvInt, address: u16) -> Result<u64, ()> {
     }
 }
 static PASSTHROUGHS: &[u64] = &[0u64];
+// check all ops until we got them all, then we can remove the "blanket" csrs where we simply write
+// this ensures we know all of the csrs a program could use
 fn read_csr_check(ri: &mut RiscvInt, addr: usize) -> u64 {
     match addr {
         CSR_FFLAGS_ADDRESS => ri.csr[CSR_FCSR_ADDRESS as usize] & 0x1f,
@@ -32,7 +34,10 @@ fn read_csr_check(ri: &mut RiscvInt, addr: usize) -> u64 {
         CSR_PMPADDR0_ADDRESS | CSR_PMPCFG0_ADDRESS
         | CSR_MEDELEG_ADDRESS | CSR_MIDELEG_ADDRESS
         | CSR_MIE_ADDRESS | CSR_STVEC_ADDRESS
-        | CSR_MEPC_ADDRESS | CSR_MSTATUS_ADDRESS | CSR_MCAUSE_ADDRESS => {
+        | CSR_MEPC_ADDRESS | CSR_MSTATUS_ADDRESS
+        | CSR_MCAUSE_ADDRESS | CSR_SEPC_ADDRESS |
+        _CSR_MSCRATCH_ADDRESS | _CSR_SSCRATCH_ADDRESS
+        | CSR_STVAL_ADDRESS | CSR_SCAUSE_ADDRESS => {
             ri.csr[addr]
         },
         _ => panic!()
@@ -76,8 +81,10 @@ fn write_csr_check(ri: &mut RiscvInt, addr: usize, value: u64) {
         }
         CSR_MTVEC_ADDRESS | CSR_PMPADDR0_ADDRESS |
         CSR_PMPCFG0_ADDRESS | CSR_MEDELEG_ADDRESS |
-         CSR_MIE_ADDRESS | CSR_FCSR_ADDRESS
-        | CSR_STVEC_ADDRESS | CSR_MEPC_ADDRESS | CSR_MCAUSE_ADDRESS => {
+         CSR_MIE_ADDRESS | CSR_FCSR_ADDRESS | CSR_SEPC_ADDRESS
+        | CSR_STVEC_ADDRESS | CSR_MEPC_ADDRESS
+        | CSR_MCAUSE_ADDRESS | _CSR_MSCRATCH_ADDRESS
+        | _CSR_SSCRATCH_ADDRESS => {
             // passthroughs
             ri.csr[addr] = value;
 
@@ -130,6 +137,35 @@ pub fn csrrsi(ri: &mut RiscvInt, args: &RiscvArgs) {
     if args.rs1 != 0 {
         write_csr_check(ri, args.csr as usize, ri.regs[args.rd as usize] | (args.rs1 as u64))
     }
+}
+pub fn sret(ri: &mut RiscvInt, args: &RiscvArgs) {
+    ri.stop_exec = true;
+    ri.want_pc = match read_csr(ri, CSR_SEPC_ADDRESS as u16) {
+        Ok(z) => Some(z),
+        Err(_) => return // trap
+    };
+    let status = read_csr_check(ri, CSR_SSTATUS_ADDRESS);
+    let spie = (status >> 5) & 1;
+    let spp = (status >> 8) & 0x1;
+    let mprv = match get_privilege_mode(spp) {
+        Priv::Machine => (status >> 17) & 1,
+        _ => 0
+    };
+    // Override SIE[1] with SPIE[5], set SPIE[5] to 1, set SPP[8] to 0,
+    // and override MPRV[17]
+    let new_status = (status & !0x20122) | (mprv << 17) | (spie << 1) | (1 << 5);
+    write_csr_check(ri, CSR_SSTATUS_ADDRESS, new_status);
+    let privs = match spp {
+        0 => Priv::UserApp,
+        1 => Priv::Supervisor,
+        _ => panic!() // Shouldn't happen
+    };
+    ri.change_priv(privs);
+    // a mret or sret instruction that changes the priv mode to a mode less
+    // privleged than m also sets mprv = 0. mret already writes mstatus
+    let mut mstatus = read_csr_check(ri, CSR_MSTATUS_ADDRESS);
+    mstatus = mstatus & !(1 << 17); // mprv is at bit 17
+    write_csr_check(ri, CSR_MSTATUS_ADDRESS, mstatus);
 }
 pub fn csrrw(ri: &mut RiscvInt, args: &RiscvArgs) {
     let data = match read_csr(ri, args.csr as u16) {
@@ -189,4 +225,10 @@ pub fn csrrwi(ri: &mut RiscvInt, args: &RiscvArgs) {
         ri.regs[args.rd as usize] = ri.sign_ext(data);
     }
     write_csr_check(ri, args.csr as usize, args.rs1 as u64)
+}
+pub fn sfence_vma(ri: &mut RiscvInt, args: &RiscvArgs) {
+
+}
+pub fn fence_i(ri: &mut RiscvInt, args: &RiscvArgs) {
+
 }

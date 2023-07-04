@@ -157,6 +157,7 @@ impl RiscvInt {
         unimplemented!()
     }
     pub fn change_priv(&mut self, privs: Priv) {
+        self.memsource.clear_cache();
         self.prvmode = privs;
     }
     pub fn handle_trap(&mut self, trp: Trap, trapped_pc: u64) {
@@ -196,7 +197,7 @@ impl RiscvInt {
             // privlege: its either 0 or 1, because we checked before
             status = (status & !0x122) | (sie << 5) | ((get_privilege_encoding(self.prvmode) & 1) << 8);
             self.csr[CSR_SSTATUS_ADDRESS as usize] = status;
-            self.change_priv(Priv::Supervisor);
+            self.change_priv(Priv::Supervisor); // or user?
         } else {
             let mtvec = self.csr[CSR_MTVEC_ADDRESS as usize];
             let vector = if ((mtvec & 1) != 0) && intr {
@@ -239,7 +240,7 @@ impl RiscvInt {
         mstatus
     }
     pub fn flush_mstatus(&mut self) {
-
+        // todo: sum bit
     }
     pub fn sign_ext(&self, value: u64) -> u64 {
         match self.xlen {
@@ -277,7 +278,7 @@ impl RiscvInt {
     }
 
     pub fn set_trap(&mut self, trp: Trap) {
-        // todo piority
+        // todo piority, i think its if one is already there
         if self.usermode {
         }
         self.trap = Some(trp);

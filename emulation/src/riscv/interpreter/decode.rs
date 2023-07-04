@@ -31,6 +31,19 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn sret(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.stop_translating = true;
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::sret
+            });
+        } else {
+            interpreter::defs::sret(self, &args);
+        }
+        return true;
+    }
     fn lui(&mut self, args: RiscvArgs) -> bool {
         if self.cache_enabled {
             self.insert_insn_current(RiscvInstr {
@@ -545,6 +558,32 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
             });
         } else {
             interpreter::defs::csrrwi(self, &args);
+        }
+        return true;
+    }
+    fn sfence_vma(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.stop_translating = true;
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::sfence_vma
+            });
+        } else {
+            interpreter::defs::sfence_vma(self, &args);
+        }
+        return true;
+    }
+    fn fence_i(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.stop_translating = true;
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fence_i
+            });
+        } else {
+            interpreter::defs::fence_i(self, &args);
         }
         return true;
     }

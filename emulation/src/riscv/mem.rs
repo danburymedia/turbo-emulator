@@ -5,6 +5,7 @@ use crate::common::memory::{flat_mem, MemEndian};
 use crate::riscv::common::{Exception, Priv, Trap, Xlen};
 use crate::riscv::common::Priv::{Machine, Supervisor, UserApp};
 use base::{debug, info, warn};
+use crate::riscv::interpreter::consts::CSR_MSTATUS_ADDRESS;
 use crate::riscv::interpreter::main::RiscvInt;
 
 pub const RISCV_PAGE_SIZE: u64 = 4096; // smallest possible, just to be safe. In riscv, it is the only possible page size
@@ -51,7 +52,7 @@ pub struct MemAccessCircumstances {
 pub struct RiscVMem {
     pub guest_mem: flat_mem,
     reglen: Xlen,
-    mstatus: u64,
+    mstatus: u64, // todo: needed?
     pmode: PageMode,
     pbmt_supported: bool,
     ppn: u64,
@@ -280,7 +281,7 @@ impl RiscVMem {
         let (mut ptesize, mut level) = match self.pmode {
             PageMode::None => panic!("how are we here?"),
             PageMode::Sv32 => (4, 2),
-            PageMode::Sv39 => (8,3),
+            PageMode::Sv39 => (8, 3),
             PageMode::Sv48 => (8, 4),
             PageMode::Sv57 => (8, 5),
         };
@@ -306,11 +307,13 @@ impl RiscVMem {
             _ => panic!()
         };
         let mut ptestr: Pte = Default::default();
+        let mut pte: u64 = 0;
+        let mut pteaddr: u64 = 0;
         while i >= 0 {
-            let a = ppn * RISCV_PAGE_SIZE + vpns_index[level as usize] * ptesize;
-            let pte: u64 = match ptesize {
-                4 => self.guest_mem.read_phys_32(self.trunc(a), MemEndian::Little) as u64,
-                8 => self.guest_mem.read_phys_64(self.trunc(a), MemEndian::Little),
+            pteaddr = ppn * RISCV_PAGE_SIZE + vpns_index[i as usize] * ptesize;
+            pte = match ptesize {
+                4 => self.guest_mem.read_phys_32(self.trunc(pteaddr), MemEndian::Little) as u64,
+                8 => self.guest_mem.read_phys_64(self.trunc(pteaddr), MemEndian::Little),
                 _ => panic!()
             };
             ptestr = self.pte_parse(pte);
@@ -328,6 +331,7 @@ impl RiscVMem {
                         return Err(());
                     },
                     _ => {
+                        ppn = ptestr.ppn;
                         i = i - 1;
                         continue;
                     }
@@ -336,10 +340,11 @@ impl RiscVMem {
             }
             break;
         }
+        // todo: we need to check for writs, access, deal properly
         match acctype.access_type {
             MemAccessType::Read => {
                 if ptestr.r == 0 {
-                    if !(ptestr.x == 1 && acctype.mxr == false) { // or ptestr.x == 0 || acctype.mxr
+                    if !(ptestr.x == 1 && acctype.mxr == true) { // or ptestr.x == 0 || !acctype.mxr
                         return Err(());
 
                     }
@@ -366,7 +371,7 @@ impl RiscVMem {
         let phys = match self.pmode {
             PageMode::None => panic!(""),
             PageMode::Sv32 => {
-                match level {
+                match i {
                     1 => {
                         if ptestr.ppns[0] != 0 {
                             return Err(());
@@ -381,7 +386,7 @@ impl RiscVMem {
                 }
             }
             _ => {
-                match level {
+                match i {
                     2 => {
                         if ptestr.ppns[1] != 0 || ptestr.ppns[0] != 0 {
                             return Err(());
@@ -399,7 +404,17 @@ impl RiscVMem {
                 }
             }
         };
-
+        if ptestr.a == 0 || (acctype.access_type == MemAccessType::Write && ptestr.d == 0) {
+            let mut new_pte = pte | (1 << 6); // access bit
+            if acctype.access_type == MemAccessType::Write {
+                new_pte |= (1 << 7); // write bit
+            }
+            match ptesize {
+                4 => self.guest_mem.write_phys_32(self.trunc(pteaddr), new_pte as u32, MemEndian::Little),
+                8 => self.guest_mem.write_phys_64(self.trunc(pteaddr), new_pte, MemEndian::Little),
+                _ => panic!()
+            };
+        }
 
         Ok(phys)
     }
@@ -626,11 +641,12 @@ impl RiscvInt {
 
     }
     pub fn gen_mem_cirum(&self, access_type: MemAccessType) -> MemAccessCircumstances {
+        let mst = self.csr[CSR_MSTATUS_ADDRESS];
         MemAccessCircumstances {
             access_type,
-            mxr: true,
-            sum: false,
-            prv: Priv::Machine // todo: fix
+            mxr: (mst & (1 << 19)) != 0,
+            sum: (mst & (1 << 18)) != 0,
+            prv: self.prvmode // todo: fix
         }
     }
     pub fn mem_trap(&self, acc_type: MemAccessType, addr: u64) -> Trap {

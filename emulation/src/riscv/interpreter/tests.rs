@@ -10,12 +10,9 @@ use std::result::Result;
 impl RiscvInt {
     fn run_test(&mut self, to_host: u64) -> Result<u32, u32> {
         loop {
-            if self.pc == 0x800005ec {
-                println!("");
-            }
-            self.exec_once().unwrap();
+            self.exec_once(); // traps are already set
             self.regs[0] = 0;
-            let val = self.memsource.lock().guest_mem.read_phys_32(to_host, MemEndian::Little);
+            let val = self.memsource.guest_mem.read_phys_32(to_host, MemEndian::Little);
             match val {
                 0 => {},
                 1 => return Ok(1),
@@ -49,11 +46,13 @@ impl RiscvInt {
         let instr = self.read32(self.pc, true, true)?;
         if (instr & 0x3) != 0x3 {
                 // compressed
+            self.is_compressed = true;
             if !crate::riscv::decoder16::decode(self, instr as u16) {
                 self.illegal_instr();
             }
             self.pc += 2;
         } else {
+            self.is_compressed = false;
             if !crate::riscv::decoder::decode(self, instr) {
                 self.illegal_instr(); // this will set stop_exec = true
             }
@@ -137,7 +136,8 @@ fn init_test(fs: &'static str) -> u32 {
     };
     let mut rcpu = RiscvInt::init_systemmode(if is64bit {Xlen::X64} else {Xlen::X32}, vmmem.clone());
     rcpu.pc = ef.entry;
-    let res = match rcpu.run_test(to_host.unwrap()) {
+   // let res = match rcpu.run_test(to_host.unwrap()) {
+    let res = match RiscvInt::run_test(&mut rcpu, to_host.unwrap()) {
         Ok(z) => {
             z
         },
@@ -156,6 +156,10 @@ mod test {
     #[test]
     fn rv32ui_p_add() {
         assert_eq!(1, init_test("rv32ui-p-add"));
+    }
+    #[test]
+    fn rv32ui_v_add() {
+        assert_eq!(1, init_test("rv32ui-v-add"));
     }
     #[test]
     fn rv32ui_p_addi() {
@@ -669,4 +673,5 @@ mod test {
     fn rv64ua_p_amoswap_w() {
         assert_eq!(1, init_test("rv64ua-p-amoswap_w"));
     }
+
 }
