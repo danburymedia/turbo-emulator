@@ -446,6 +446,14 @@ pub fn fclass_s(ri: &mut RiscvInt, args: &RiscvArgs) {
     let fs1 = F32::from_bits(read_float32(ri, args.rs1 as usize));
     ri.regs[args.rd as usize] = class_f32(fs1);
 }
+pub fn fcvt_s_l(ri: &mut RiscvInt, args: &RiscvArgs) {
+    let mut fpstate: FPState = Default::default();
+    let fs1 = F32::from_i64(ri.regs[args.rs1 as usize] as i64,
+                            insn_2_rm_with_csr(ri, args.rm),
+                            Some(&mut fpstate));
+    write_float32(ri, fs1.into_bits(), args.rd as usize);
+    fps_2_fflags(ri, fpstate);
+}
 pub fn fcvt_s_w(ri: &mut RiscvInt, args: &RiscvArgs) {
     let mut fpstate: FPState = Default::default();
     let fs1 = F32::from_i32(ri.regs[args.rs1 as usize] as i32, insn_2_rm_with_csr(ri, args.rm), Some(&mut fpstate));

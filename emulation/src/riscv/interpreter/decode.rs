@@ -2353,6 +2353,18 @@ impl crate::riscv::decoder::DecodeTrait for RiscvInt {
         }
         return true;
     }
+    fn fcvt_s_l(&mut self, args: RiscvArgs) -> bool {
+        if self.cache_enabled {
+            self.insert_insn_current(RiscvInstr {
+                args,
+                inc_by: 0,
+                func: interpreter::defs::fcvt_s_l
+            });
+        } else {
+            interpreter::defs::fcvt_s_l(self, &args);
+        }
+        return true;
+    }
     fn fcvt_s_lu(&mut self, args: RiscvArgs) -> bool {
         if self.cache_enabled {
             self.insert_insn_current(RiscvInstr {
