@@ -37,7 +37,7 @@ fn read_csr_check(ri: &mut RiscvInt, addr: usize) -> u64 {
         | CSR_MEPC_ADDRESS | CSR_MSTATUS_ADDRESS
         | CSR_MCAUSE_ADDRESS | CSR_SEPC_ADDRESS |
         _CSR_MSCRATCH_ADDRESS | _CSR_SSCRATCH_ADDRESS
-        | CSR_STVAL_ADDRESS | CSR_SCAUSE_ADDRESS => {
+        | CSR_STVAL_ADDRESS | CSR_SCAUSE_ADDRESS | CSR_FCSR_ADDRESS => {
             ri.csr[addr]
         },
         _ => panic!()
