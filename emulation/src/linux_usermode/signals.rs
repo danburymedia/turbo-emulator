@@ -130,7 +130,7 @@ impl Sigmask {
         let mut realaddr = addr;
         sigret.real_size = 4;
         for i in 0..32 {
-            let val = flatmem.read_phys_32(realaddr, end);
+            let val = flatmem.read_phys_32(realaddr, end).unwrap();
             sigret.vals[i] = val as u64;
             realaddr += 4;
         }
@@ -142,7 +142,7 @@ impl Sigmask {
         let mut realaddr = addr;
         sigret.real_size = 8;
         for i in 0..16 {
-            let val = flatmem.read_phys_64(realaddr, end);
+            let val = flatmem.read_phys_64(realaddr, end).unwrap();
             sigret.vals[i] = val as u64;
             realaddr += 8;
         }

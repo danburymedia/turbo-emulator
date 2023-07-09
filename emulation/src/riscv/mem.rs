@@ -1,10 +1,11 @@
 use std::cmp::Ordering;
 use std::collections::HashMap;
 use vm_memory::{GuestAddress, GuestMemory};
-use crate::common::memory::{flat_mem, MemEndian};
-use crate::riscv::common::{Exception, Priv, Trap, Xlen};
+use crate::common::memory::{flat_mem, MemEndian, MemError};
+use crate::riscv::common::{Exception, Priv, RiscvMemError, Trap, Xlen};
 use crate::riscv::common::Priv::{Machine, Supervisor, UserApp};
 use base::{debug, info, warn};
+use crate::riscv::common::RiscvMemError::{GenError, PageError};
 use crate::riscv::interpreter::consts::CSR_MSTATUS_ADDRESS;
 use crate::riscv::interpreter::main::RiscvInt;
 
@@ -47,6 +48,8 @@ pub struct MemAccessCircumstances {
     pub mxr: bool, // when 0, only read when said we can read. When 1, we can read exec and read
     pub sum: bool, // when 0, s mode cant access u mode, when 1, yes
     pub prv: Priv
+    // todo: should there be a "side effect" variable that tells it to not write anything?
+    // could be useful for no_trap and debugging and anytime where we need to read but ok with failure
 
 }
 pub struct RiscVMem {
@@ -133,70 +136,46 @@ impl RiscVMem {
             false
         }
     }
-    pub fn write_n_bytes(&mut self, addr: u64, access: MemAccessCircumstances, dat: Vec<u8>) -> Result<(), u64> {
+    pub fn write_n_bytes(&mut self, addr: u64, access: MemAccessCircumstances, dat: Vec<u8>) -> Result<(), RiscvMemError> {
         if self.check_over_page_table(addr, dat.len() as u64) {
             for i in 0..(dat.len()) {
-                match self.write8(addr + (i as u64), access, dat[i]) {
-                    Ok(()) => {},
-                    Err(z) => {
-                        return Err(z);
-                        //return Err(addr + (i as u64));
-                    }
-                }
-
+                self.write8(addr + (i as u64), access, dat[i])?;
             }
-            return Ok(());
+            Ok(())
 
         } else {
-            let realaddr = match self.virt2phys(addr, access) {
-                Ok(ra) => ra,
-                Err(_) => return Err(addr),
-            };
-            self.guest_mem.write_phys_n(realaddr, dat);
-            return Ok(());
-
+            let realaddr = self.virt2phys(addr, access)
+                .map_err(|_| RiscvMemError::PageError(addr))?;
+            self.guest_mem.write_phys_n(realaddr, dat).map_err(|_| RiscvMemError::GenError(realaddr))
         }
 
 
     }
 
-    pub fn read_n_bytes(&mut self, addr: u64, len: usize, access: MemAccessCircumstances) -> Result<Vec<u8>, u64> {
+    pub fn read_n_bytes(&mut self, addr: u64, len: usize, access: MemAccessCircumstances) -> Result<Vec<u8>, RiscvMemError> {
         // todo: optimize for system mode. We can't be creating a vect every memaccess
         if self.check_over_page_table(addr, len as u64) {
             let mut retval: Vec<u8> = vec![0; len];
             for i in 0..len {
-                match self.read8(addr + (i as u64), access) {
-                    Ok(app) => {
-                        retval[i] = app;
-                    },
-                    Err(z) => {
-                        return Err(addr + (i as u64));
-                    }
-                };
-
+                let val = self.read8(addr + (i as u64), access)?;
+                retval[i] = val;
             }
             return Ok(retval);
-
         } else {
-            let realaddr = match self.virt2phys(addr, access) {
-                Ok(ra) => ra,
-                Err(_) => return Err(addr),
-            };
-            let vec = self.guest_mem.read_phys_n(realaddr, len);
-            return Ok(vec);
+            let realaddr = self.virt2phys(addr, access)
+                .map_err(|_| RiscvMemError::PageError(addr))?;
+            return self.guest_mem.read_phys_n(realaddr, len)
+                .map_err(|_| RiscvMemError::GenError(realaddr));
 
         }
 
 
     }
 
-    pub fn read8(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u8, u64> {
-        let realaddr = match self.virt2phys(addr, access) {
-            Ok(ra) => ra,
-            Err(_) => return Err(addr),
-        };
-        let val = self.guest_mem.read_phys_8(realaddr);
-        return Ok(val);
+    pub fn read8(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u8, RiscvMemError> {
+        let realaddr = self.virt2phys(addr, access)
+            .map_err(|_| RiscvMemError::PageError(addr))?;
+        self.guest_mem.read_phys_8(realaddr).map_err(|_| GenError(realaddr))
     }
     pub fn swap32imm(&mut self, addr: u64, imm: u32, ord: core::sync::atomic::Ordering, access: MemAccessCircumstances) -> Result<u32, u64> {
         let realaddr = match self.virt2phys(addr, access) {
@@ -206,62 +185,38 @@ impl RiscVMem {
         let val = self.guest_mem.swap_atomic_imm_32(realaddr, imm, MemEndian::Little, ord);
         return Ok(val);
     }
-    pub fn read16(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u16, u64> {
-        return match self.read_n_bytes(addr, 2, access) {
-            Ok(vect) => {
-                let mut retval: [u8; 2] = [0; 2];
-                retval.copy_from_slice(&vect.as_slice()[0..2]);
-                Ok(u16::from_le_bytes(retval))
-            },
-            Err(er) => Err(er)
-        }
+    pub fn read16(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u16, RiscvMemError> {
+        let vect = self.read_n_bytes(addr, 2, access)?;
+        let mut retval: [u8; 2] = [0; 2];
+        retval.copy_from_slice(&vect.as_slice()[0..2]);
+        Ok(u16::from_le_bytes(retval))
 
     }
-    pub fn read32(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u32, u64> {
-        return match self.read_n_bytes(addr, 4, access) {
-            Ok(vect) => {
-                let mut retval: [u8; 4] = [0; 4];
-                retval.copy_from_slice(&vect.as_slice()[0..4]);
-                Ok(u32::from_le_bytes(retval))
-            },
-            Err(er) => Err(er)
-        }
+    pub fn read32(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u32, RiscvMemError> {
+        let vect = self.read_n_bytes(addr, 4, access)?;
+        let mut retval: [u8; 4] = [0; 4];
+        retval.copy_from_slice(&vect.as_slice()[0..4]);
+        Ok(u32::from_le_bytes(retval))
     }
-    pub fn read64(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u64, u64> {
-        return match self.read_n_bytes(addr, 8, access) {
-            Ok(vect) => {
-                let mut retval: [u8; 8] = [0; 8];
-                retval.copy_from_slice(&vect.as_slice()[0..8]);
-                Ok(u64::from_le_bytes(retval))
-            },
-            Err(er) => Err(er)
-        }
+    pub fn read64(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u64, RiscvMemError> {
+        let vect = self.read_n_bytes(addr, 8, access)?;
+        let mut retval: [u8; 8] = [0; 8];
+        retval.copy_from_slice(&vect.as_slice()[0..8]);
+        Ok(u64::from_le_bytes(retval))
     }
-    pub fn write8(&mut self, addr: u64, access: MemAccessCircumstances, val: u8) -> Result<(), u64> {
-        let realaddr = match self.virt2phys(addr, access) {
-            Ok(ra) => ra,
-            Err(_) => return Err(addr),
-        };
-        self.guest_mem.write_phys_8(realaddr, val);
-        return Ok(());
+    pub fn write8(&mut self, addr: u64, access: MemAccessCircumstances, val: u8) -> Result<(), RiscvMemError> {
+        let realaddr = self.virt2phys(addr, access)
+            .map_err(|_| RiscvMemError::PageError(addr))?;
+        self.guest_mem.write_phys_8(realaddr, val).map_err(|_| GenError(realaddr))
     }
-    pub fn write64(&mut self, addr: u64, access: MemAccessCircumstances, val: u64) -> Result<(), u64> {
-        return match self.write_n_bytes(addr, access, val.to_le_bytes().to_vec()) {
-            Ok(_) => Ok(()),
-            Err(z) => Err(z)
-        }
+    pub fn write64(&mut self, addr: u64, access: MemAccessCircumstances, val: u64) -> Result<(), RiscvMemError> {
+        self.write_n_bytes(addr, access, val.to_le_bytes().to_vec())
     }
-    pub fn write32(&mut self, addr: u64, access: MemAccessCircumstances, val: u32) -> Result<(), u64> {
-        return match self.write_n_bytes(addr, access, val.to_le_bytes().to_vec()) {
-            Ok(_) => Ok(()),
-            Err(z) => Err(z)
-        }
+    pub fn write32(&mut self, addr: u64, access: MemAccessCircumstances, val: u32) -> Result<(), RiscvMemError> {
+        self.write_n_bytes(addr, access, val.to_le_bytes().to_vec())
     }
-    pub fn write16(&mut self, addr: u64, access: MemAccessCircumstances, val: u16) -> Result<(), u64> {
-        return match self.write_n_bytes(addr, access, val.to_le_bytes().to_vec()) {
-            Ok(_) => Ok(()),
-            Err(z) => Err(z)
-        }
+    pub fn write16(&mut self, addr: u64, access: MemAccessCircumstances, val: u16) -> Result<(), RiscvMemError> {
+        self.write_n_bytes(addr, access, val.to_le_bytes().to_vec())
     }
     pub fn virt2phys(&mut self, addr: u64, access: MemAccessCircumstances) -> Result<u64, ()> {
         // riscv is not clear
@@ -277,6 +232,7 @@ impl RiscVMem {
         }
 
     }
+    // todo: we can return a pagewalk_error enum with speicific reasons
     fn page_walk(&mut self, addr: u64, acctype: MemAccessCircumstances) -> Result<u64, ()> {
         let (mut ptesize, mut level) = match self.pmode {
             PageMode::None => panic!("how are we here?"),
@@ -312,8 +268,8 @@ impl RiscVMem {
         while i >= 0 {
             pteaddr = ppn * RISCV_PAGE_SIZE + vpns_index[i as usize] * ptesize;
             pte = match ptesize {
-                4 => self.guest_mem.read_phys_32(self.trunc(pteaddr), MemEndian::Little) as u64,
-                8 => self.guest_mem.read_phys_64(self.trunc(pteaddr), MemEndian::Little),
+                4 => self.guest_mem.read_phys_32(self.trunc(pteaddr), MemEndian::Little).unwrap_or_else(|_|0) as u64,
+                8 => self.guest_mem.read_phys_64(self.trunc(pteaddr), MemEndian::Little).unwrap_or_else(|_|0),
                 _ => panic!()
             };
             ptestr = self.pte_parse(pte);
@@ -496,13 +452,21 @@ impl RiscvInt {
             Xlen::X64 => address
         }
     }
-    pub fn mem_fn_handler<T>(&mut self, res: Result<T, u64>, set_trap: bool, acctype: MemAccessType) -> Result<T, Trap> {
+    pub fn mem_fn_handler<T>(&mut self, res: Result<T, RiscvMemError>, set_trap: bool, acctype: MemAccessType) -> Result<T, Trap> {
         match res {
             Ok(p) => {
                 Ok(p)
             }
             Err(z) => {
-                let trp = self.mem_trap(acctype, z);
+                let trp = match z {
+                    GenError(afaddr) => {
+                        panic!(); // for now
+                        self.mem_trap_access(acctype, afaddr)
+                    }
+                    PageError(pfaddr) => {
+                        self.mem_trap(acctype, pfaddr)
+                    }
+                };
                 if set_trap {
                     self.set_trap(trp);
                 }
@@ -532,12 +496,12 @@ impl RiscvInt {
             }
         }
     }
-    pub fn readn(&mut self, addr: u64, size: u64, is_exec: bool, set_trap: bool) -> Result<Vec<u8>, Trap> {
+    pub fn readx(&mut self, addr: u64, size: u64, is_exec: bool, set_trap: bool) -> Result<Vec<u8>, Trap> {
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
         let x = self.memsource.read_n_bytes(self.get_effective_address(addr), size as usize, macc);
         self.mem_fn_handler(x, set_trap, macc.access_type)
     }
-    pub fn write_n(&mut self, addr: u64, vals: Vec<u8>, set_trap: bool) -> Result<(), Trap> {
+    pub fn writex(&mut self, addr: u64, vals: Vec<u8>, set_trap: bool) -> Result<(), Trap> {
 
         let macc = self.gen_mem_cirum(MemAccessType::Write);
         let x = self.memsource.write_n_bytes(self.get_effective_address(addr),  macc, vals);
@@ -546,7 +510,7 @@ impl RiscvInt {
     pub fn read64(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u64, Trap> {
         // todo- check mmio, etc
         if self.usermode {
-            return Ok(self.memsource.guest_mem.read_phys_64(addr, MemEndian::Little));
+            return Ok(self.memsource.guest_mem.read_phys_64(addr, MemEndian::Little).unwrap());
         }
         // we "can" do a usermode read/write from the internal read funcs, but we shouldnt reach there
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
@@ -556,7 +520,7 @@ impl RiscvInt {
 
     pub fn read32(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u32, Trap> {
         if self.usermode {
-            return Ok(self.memsource.guest_mem.read_phys_32(addr, MemEndian::Little));
+            return Ok(self.memsource.guest_mem.read_phys_32(addr, MemEndian::Little).unwrap());
         }
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
         let res = self.memsource.read32(self.get_effective_address(addr), macc);
@@ -565,7 +529,7 @@ impl RiscvInt {
 
     pub fn read16(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u16, Trap> {
         if self.usermode {
-            return Ok(self.memsource.guest_mem.read_phys_16(addr, MemEndian::Little));
+            return Ok(self.memsource.guest_mem.read_phys_16(addr, MemEndian::Little).unwrap());
         }
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
         let res = self.memsource.read16(self.get_effective_address(addr), macc);
@@ -574,7 +538,7 @@ impl RiscvInt {
 
     pub fn read8(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u8, Trap> {
         if self.usermode {
-            return Ok(self.memsource.guest_mem.read_phys_8(addr));
+            return Ok(self.memsource.guest_mem.read_phys_8(addr).unwrap());
         }
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
         let res = self.memsource.read8(self.get_effective_address(addr), macc);
@@ -585,7 +549,8 @@ impl RiscvInt {
         let macc = self.gen_mem_cirum(get_read_access_type(is_exec));
         let res = self.memsource.swap32imm(
             self.get_effective_address(addr), imm, ord, macc);
-        self.mem_fn_handler(res, set_trap, macc.access_type)
+        unimplemented!();
+        //self.mem_fn_handler(res, set_trap, macc.access_type)
 
     }
 
@@ -657,6 +622,19 @@ impl RiscvInt {
                 Exception::StorePageFault
             } else {
                 Exception::InstructionPageFault
+            },
+            val: addr
+        }
+    }
+    /// for access faults
+    pub fn mem_trap_access(&self, acc_type: MemAccessType, addr: u64) -> Trap {
+        Trap {
+            ttype: if acc_type == MemAccessType::Read {
+                Exception::LoadAccessFault
+            } else if acc_type == MemAccessType::Write {
+                Exception::StoreAccessFault
+            } else {
+                Exception::InstructionAccessFault
             },
             val: addr
         }

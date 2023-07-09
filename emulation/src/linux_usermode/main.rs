@@ -836,7 +836,7 @@ pub fn u_getpriority(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut 
 pub fn u_set_tid_address(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let ptr = sysin.args[0];
     let endian = if ume.is_little_endian { MemEndian::Little } else { MemEndian::Big };
-    let mut getval: c_int = ume.mem_access.read_phys_32(ptr, endian) as c_int;
+    let mut getval: c_int = ume.mem_access.read_phys_32(ptr, endian).unwrap() as c_int;
     let retval = unsafe {
         syscall(SYS_set_tid_address, &mut getval)
     };
@@ -1226,9 +1226,9 @@ pub fn u_ppoll(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let mut pfdvec: Vec<libc::pollfd> = Vec::new();
     let mut curraddr = fds;
     for _ in 0..nfds {
-        let f = ume.mem_access.read_phys_32(curraddr, endian);
-        let events = ume.mem_access.read_phys_16(curraddr + 4, endian);
-        let revents = ume.mem_access.read_phys_16(curraddr + 6, endian);
+        let f = ume.mem_access.read_phys_32(curraddr, endian).unwrap();
+        let events = ume.mem_access.read_phys_16(curraddr + 4, endian).unwrap();
+        let revents = ume.mem_access.read_phys_16(curraddr + 6, endian).unwrap();
         pfdvec.push(pollfd {
             fd: f as c_int,
             events: events as c_short,
@@ -1241,15 +1241,15 @@ pub fn u_ppoll(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     if timeout != 0 {
         set_time = true;
         if ume.is_64 {
-            let fsec = ume.mem_access.read_phys_64(timeout, endian);
-            let nsec = ume.mem_access.read_phys_64(timeout + 4, endian);
+            let fsec = ume.mem_access.read_phys_64(timeout, endian).unwrap();
+            let nsec = ume.mem_access.read_phys_64(timeout + 4, endian).unwrap();
             timeo = timespec {
                 tv_sec: fsec as time_t,
                 tv_nsec: nsec as c_long
             };
         } else {
-            let fsec = ume.mem_access.read_phys_32(timeout, endian);
-            let nsec = ume.mem_access.read_phys_32(timeout + 2, endian);
+            let fsec = ume.mem_access.read_phys_32(timeout, endian).unwrap();
+            let nsec = ume.mem_access.read_phys_32(timeout + 2, endian).unwrap();
             timeo = timespec {
                 tv_sec: fsec as time_t,
                 tv_nsec: nsec as c_long
@@ -1327,16 +1327,24 @@ pub fn u_utimensat(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let (s1, n1,s2,n2) = if tpaddr == 0 {
         (0,0,0,0)
     } else if ume.is_64 {
-            let s1 = ume.mem_access.read_phys_64(tpaddr, endian);
-            let n1 = ume.mem_access.read_phys_64(tpaddr + 8,  endian);
-            let s2 = ume.mem_access.read_phys_64(tpaddr + 16, endian);
-            let n2 = ume.mem_access.read_phys_64(tpaddr + 24, endian);
+            let s1 = ume.mem_access.read_phys_64(tpaddr, endian)
+                .unwrap();
+            let n1 = ume.mem_access.read_phys_64(tpaddr + 8,  endian)
+                .unwrap();
+            let s2 = ume.mem_access.read_phys_64(tpaddr + 16, endian)
+                .unwrap();
+            let n2 = ume.mem_access.read_phys_64(tpaddr + 24, endian)
+                .unwrap();
             (s1, n1, s2, n2)
     } else {
-            let s1 = ume.mem_access.read_phys_32(tpaddr, endian) as i32 as i64 as u64;
-            let n1 = ume.mem_access.read_phys_32(tpaddr + 4,  endian) as i32 as i64 as u64;
-            let s2 = ume.mem_access.read_phys_32(tpaddr + 8, endian) as i32 as i64 as u64;
-            let n2 = ume.mem_access.read_phys_32(tpaddr + 12,  endian) as i32 as i64 as u64;
+            let s1 = ume.mem_access.read_phys_32(tpaddr, endian)
+                .unwrap() as i32 as i64 as u64;
+            let n1 = ume.mem_access.read_phys_32(tpaddr + 4,  endian)
+                .unwrap() as i32 as i64 as u64;
+            let s2 = ume.mem_access.read_phys_32(tpaddr + 8, endian)
+                .unwrap() as i32 as i64 as u64;
+            let n2 = ume.mem_access.read_phys_32(tpaddr + 12,  endian)
+                .unwrap() as i32 as i64 as u64;
             (s1, n1, s2, n2)
     };
     let mut ts: [timespec ; 2] = unsafe {mem::zeroed()};
@@ -1441,12 +1449,12 @@ pub fn u_clock_settime(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOu
     let mut sout: SyscallOut = Default::default();
     let endian = if ume.is_little_endian { MemEndian::Little } else { MemEndian::Big };
     let (tv_sec, tv_nsec) = if ume.is_64 {
-        let s = ume.mem_access.read_phys_64(tpaddr, endian);
-        let n = ume.mem_access.read_phys_64(tpaddr + 8,  endian);
+        let s = ume.mem_access.read_phys_64(tpaddr, endian).unwrap();
+        let n = ume.mem_access.read_phys_64(tpaddr + 8,  endian).unwrap();
         (s, n)
     } else {
-        let s = ume.mem_access.read_phys_32(tpaddr, endian) as i32 as i64 as u64;
-        let n = ume.mem_access.read_phys_32(tpaddr + 4,  endian) as i32 as i64 as u64 ;
+        let s = ume.mem_access.read_phys_32(tpaddr, endian).unwrap() as i32 as i64 as u64;
+        let n = ume.mem_access.read_phys_32(tpaddr + 4,  endian).unwrap() as i32 as i64 as u64 ;
         (s, n)
     };
     let mut timespec: timespec = timespec {
@@ -1521,13 +1529,13 @@ pub fn u_readv(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let mut curraddr = initaladdr;
     for _ in 0..cnt {
         let (base, len) = if ume.is_64 {
-            let b = ume.mem_access.read_phys_64(curraddr, endian);
-            let l = ume.mem_access.read_phys_64(curraddr + 8, endian);
+            let b = ume.mem_access.read_phys_64(curraddr, endian).unwrap();
+            let l = ume.mem_access.read_phys_64(curraddr + 8, endian).unwrap();
             curraddr += 16;
             (b, l)
         } else {
-            let b = ume.mem_access.read_phys_32(curraddr, endian) as u64;
-            let l = ume.mem_access.read_phys_32(curraddr + 4, endian) as u64;
+            let b = ume.mem_access.read_phys_32(curraddr, endian).unwrap() as u64;
+            let l = ume.mem_access.read_phys_32(curraddr + 4, endian).unwrap() as u64;
             curraddr += 8;
             (b, l)
         };
@@ -1552,13 +1560,13 @@ pub fn u_writev(sysin: SyscallIn, ume: &mut UserModeRuntime) -> SyscallOut {
     let mut curraddr = initaladdr;
     for _ in 0..cnt {
         let (base, len) = if ume.is_64 {
-            let b = ume.mem_access.read_phys_64(curraddr, endian);
-            let l = ume.mem_access.read_phys_64(curraddr + 8, endian);
+            let b = ume.mem_access.read_phys_64(curraddr, endian).unwrap();
+            let l = ume.mem_access.read_phys_64(curraddr + 8, endian).unwrap();
             curraddr += 16;
             (b, l)
         } else {
-            let b = ume.mem_access.read_phys_32(curraddr, endian) as u64;
-            let l = ume.mem_access.read_phys_32(curraddr + 4, endian) as u64;
+            let b = ume.mem_access.read_phys_32(curraddr, endian).unwrap() as u64;
+            let l = ume.mem_access.read_phys_32(curraddr + 4, endian).unwrap() as u64;
             curraddr += 8;
             (b, l)
         };

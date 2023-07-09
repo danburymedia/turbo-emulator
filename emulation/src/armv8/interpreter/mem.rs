@@ -44,7 +44,7 @@ impl Arm64Cpu {
             self.memory_access.read_phys_8_atomic(addr as u64,
                                                    Ordering::SeqCst)
         } else {
-            self.memory_access.read_phys_8(addr as u64)
+            self.memory_access.read_phys_8(addr as u64).unwrap()
         };
         Some(val)
 
@@ -55,7 +55,7 @@ impl Arm64Cpu {
                                                    MemEndian::Little,
                                                    Ordering::SeqCst)
         } else {
-            self.memory_access.read_phys_16(addr as u64, MemEndian::Little)
+            self.memory_access.read_phys_16(addr as u64, MemEndian::Little).unwrap()
         };
         Some(val)
     }
@@ -65,7 +65,7 @@ impl Arm64Cpu {
                                                    MemEndian::Little,
                                                    Ordering::SeqCst)
         } else {
-            self.memory_access.read_phys_32(addr as u64, MemEndian::Little)
+            self.memory_access.read_phys_32(addr as u64, MemEndian::Little).unwrap()
         };
         Some(val)
     }
@@ -75,7 +75,7 @@ impl Arm64Cpu {
                                                    MemEndian::Little,
                                                    Ordering::SeqCst)
         } else {
-            self.memory_access.read_phys_64(addr as u64, MemEndian::Little)
+            self.memory_access.read_phys_64(addr as u64, MemEndian::Little).unwrap()
         };
         Some(val)
     }
@@ -86,7 +86,7 @@ impl Arm64Cpu {
                                                     val,
                                                     Ordering::SeqCst);
         } else {
-            self.memory_access.write_phys_8(addr as u64, val);
+            self.memory_access.write_phys_8(addr as u64, val).unwrap();
         }
         false
     }

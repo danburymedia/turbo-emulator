@@ -12,7 +12,8 @@ impl RiscvInt {
         loop {
             self.exec_once(); // traps are already set
             self.regs[0] = 0;
-            let val = self.memsource.guest_mem.read_phys_32(to_host, MemEndian::Little);
+            let val = self.memsource.guest_mem
+                .read_phys_32(to_host, MemEndian::Little).unwrap();
             match val {
                 0 => {},
                 1 => return Ok(1),

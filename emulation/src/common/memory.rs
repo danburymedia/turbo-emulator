@@ -1,3 +1,4 @@
+use std::{ptr, result};
 use std::sync::atomic::{AtomicPtr, Ordering};
 use vm_memory::*;
 //use lawson_log::*;
@@ -16,6 +17,10 @@ pub struct flat_mem {
     pub guest_mem: GuestMemory,
     pub is_usermode: bool,
   //  should_panic: bool,
+}
+#[derive(Debug)]
+pub enum MemError {
+    FlatErr(vm_memory::guest_memory::Error)
 }
 pub fn raw2array(addr: u64, buf: &mut [u8]) {
     let mut ptr: *const u8 = addr as *const u8;
@@ -47,23 +52,24 @@ impl flat_mem {
             guest_mem: gm
         }
     }
-    pub fn read_phys_n(&mut self, addr: u64, len: usize) -> Vec<u8> {
+    pub fn read_phys_n(&mut self, addr: u64, len: usize) -> result::Result<Vec<u8>, MemError> {
         let mut retthis: Vec<u8> = vec![0; len];
         if self.is_usermode {
             raw2array(addr, &mut retthis);
-            return retthis;
+            return Ok(retthis);
         }
-        let s = self.guest_mem.read_at_addr(&mut retthis, GuestAddress(addr)).unwrap();
+        let s = self.guest_mem.read_at_addr(&mut retthis, GuestAddress(addr))
+            .map_err(MemError::FlatErr)?;
         if s != len {
             debug!("mismatch in read_phys_n()");
         }
-        return retthis;
+        return Ok(retthis);
     }
-    pub fn read_phys_8(&mut self, addr: u64) -> u8 {
+    pub fn read_phys_8(&mut self, addr: u64) ->  result::Result<u8, MemError> {
         if self.is_usermode {
             let mut ptr: *mut u8 = addr as *mut u8;
             let val = unsafe { *ptr };
-            return val;
+            return Ok(val);
         }
         let mut buf: [u8; 1] = Default::default();
         if self.is_usermode {
@@ -71,30 +77,32 @@ impl flat_mem {
             unsafe  {
                 buf[0] = *ptr;
             }
-            return buf[0];
+            return Ok(buf[0]);
         }
-        let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr)).unwrap();
+        let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr))
+            .map_err(MemError::FlatErr)?;
         if s != 1 {
             debug!("mismatch in read");
         }
-        return buf[0]; // we should panic before we get here in case invalid
+        return Ok(buf[0]); // we should panic before we get here in case invalid
     }
-    pub fn read_phys_16(&mut self, addr: u64, endian: MemEndian) -> u16 {
+    pub fn read_phys_16(&mut self, addr: u64, endian: MemEndian) ->  result::Result<u16, MemError> {
         if self.is_usermode {
             let mut ptr: *mut u16 = addr as *mut u16;
-            let val = unsafe { *ptr };
+            let val = unsafe { ptr.read_unaligned() };
             let mut retval = if host_guest_endian_mismatch(endian) {
                 val.swap_bytes()
             } else {
                 val
             };
-            return retval;
+            return Ok(retval);
         }
         let mut buf: [u8; 2] = Default::default();
         if self.is_usermode {
             raw2array(addr, &mut buf);
         } else {
-            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 2 {
                 //   panic!("mismatch in read")
                 // println
@@ -103,90 +111,97 @@ impl flat_mem {
         }
 
         if endian == MemEndian::Big {
-            return u16::from_be_bytes(buf);
+            return Ok(u16::from_be_bytes(buf));
         } else {
-            return u16::from_le_bytes(buf);
+            return Ok(u16::from_le_bytes(buf));
         };
 
     }
-    pub fn read_phys_32(&mut self, addr: u64, endian: MemEndian) -> u32 {
+    pub fn read_phys_32(&mut self, addr: u64, endian: MemEndian) ->  result::Result<u32, MemError> {
         if self.is_usermode {
             let mut ptr: *mut u32 = addr as *mut u32;
-            let val = unsafe { *ptr };
+            let val = unsafe { ptr::read_unaligned(ptr) };
             let mut retval = if host_guest_endian_mismatch(endian) {
                 val.swap_bytes()
             } else {
                 val
             };
-            return retval;
+            return Ok(retval);
         }
         let mut buf: [u8; 4] = Default::default();
         if self.is_usermode {
             raw2array(addr, &mut buf);
         } else {
-            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 4 {
                 debug!("mismatch in read");
             }
         }
         if endian == MemEndian::Big {
-            return u32::from_be_bytes(buf);
+            return Ok(u32::from_be_bytes(buf));
         } else {
-            return u32::from_le_bytes(buf);
+            return Ok(u32::from_le_bytes(buf));
         };
     }
-    pub fn read_phys_64(&mut self, addr: u64, endian: MemEndian) -> u64 {
+    pub fn read_phys_64(&mut self, addr: u64, endian: MemEndian) ->  result::Result<u64, MemError> {
         if self.is_usermode {
             let mut ptr: *mut u64 = addr as *mut u64;
-            let val = unsafe { *ptr };
+            let val = unsafe { ptr.read_unaligned() };
             let mut retval = if host_guest_endian_mismatch(endian) {
                 val.swap_bytes()
             } else {
                 val
             };
-            return retval;
+            return Ok(retval);
         }
         let mut buf: [u8; 8] = Default::default();
         if self.is_usermode {
             raw2array(addr, &mut buf);
         } else {
-            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.read_at_addr(&mut buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 8 {
                 debug!("mismatch in read_phys_64()");
             }
         }
         if endian == MemEndian::Big {
-            return u64::from_be_bytes(buf);
+            return Ok(u64::from_be_bytes(buf));
         } else {
-            return u64::from_le_bytes(buf);
+            return Ok(u64::from_le_bytes(buf));
         };
     }
-    pub fn write_phys_n(&mut self, addr: u64, dat: Vec<u8>)  {
+    pub fn write_phys_n(&mut self, addr: u64, dat: Vec<u8>) ->  result::Result<(), MemError> {
         if self.is_usermode {
-            array2raw(addr, &dat)
+            array2raw(addr, &dat);
         } else {
-            self.guest_mem.write_all_at_addr(&dat, GuestAddress(addr)).unwrap();
+            self.guest_mem.write_all_at_addr(&dat, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
+
         }
+        return Ok(());
     }
-    pub fn write_phys_8(&mut self, addr: u64, val: u8) {
+    pub fn write_phys_8(&mut self, addr: u64, val: u8) ->  result::Result<(), MemError>  {
         if self.is_usermode {
             let mut ptr: *mut u8 = addr as *mut u8;
             unsafe {
                 *ptr = val;
             }
-            return;
+            return Ok(());
         }
         let mut buf: [u8; 1] = [val];
         if self.is_usermode {
             array2raw(addr, &buf)
         } else {
-            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 1 {
                 debug!("mismatch in write");
             }
         }
+        Ok(())
     }
-    pub fn write_phys_16(&mut self, addr: u64, val: u16, endian: MemEndian) {
+    pub fn write_phys_16(&mut self, addr: u64, val: u16, endian: MemEndian) ->  result::Result<(), MemError> {
         if self.is_usermode {
             let mut ptr: *mut u16 = addr as *mut u16;
             let mut writeval = if host_guest_endian_mismatch(endian) {
@@ -197,7 +212,7 @@ impl flat_mem {
             unsafe {
                 *ptr = writeval;
             }
-            return;
+            return Ok(());
         }
         let mut buf: [u8; 2] = if endian == MemEndian::Big {
             val.to_be_bytes()
@@ -207,15 +222,17 @@ impl flat_mem {
         if self.is_usermode {
             array2raw(addr, &buf)
         } else {
-            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 2 {
                 debug!("mismatch in write");
             }
         }
+        Ok(())
 
     }
 
-    pub fn write_phys_32(&mut self, addr: u64, val: u32, endian: MemEndian) {
+    pub fn write_phys_32(&mut self, addr: u64, val: u32, endian: MemEndian) ->  result::Result<(), MemError> {
         if self.is_usermode {
             let mut ptr: *mut u32 = addr as *mut u32;
             let mut writeval = if host_guest_endian_mismatch(endian) {
@@ -226,7 +243,7 @@ impl flat_mem {
             unsafe {
                 *ptr = writeval;
             }
-            return;
+            return Ok(());
         }
         let mut buf: [u8; 4] = if endian == MemEndian::Big {
             val.to_be_bytes()
@@ -236,14 +253,16 @@ impl flat_mem {
         if self.is_usermode {
             array2raw(addr, &buf)
         } else {
-            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 4 {
                 debug!("mismatch in write");
             }
         }
-
+        Ok(())
     }
-    pub fn write_phys_64(&mut self, addr: u64, val: u64, endian: MemEndian) {
+    pub fn write_phys_64(&mut self, addr: u64, val: u64,
+                         endian: MemEndian) ->  result::Result<(), MemError>  {
         if self.is_usermode {
             let mut ptr: *mut u64 = addr as *mut u64;
             let mut writeval = if host_guest_endian_mismatch(endian) {
@@ -252,9 +271,9 @@ impl flat_mem {
                 val
             };
             unsafe {
-                *ptr = writeval;
+                ptr.write_unaligned(writeval);
             }
-            return;
+            return Ok(());
         }
         let mut buf: [u8; 8] = if endian == MemEndian::Big {
             val.to_be_bytes()
@@ -263,13 +282,14 @@ impl flat_mem {
         };
         if self.is_usermode {
             array2raw(addr, &buf)
-
         } else {
-            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr)).unwrap();
+            let s = self.guest_mem.write_at_addr(& buf, GuestAddress(addr))
+                .map_err(MemError::FlatErr)?;
             if s != 8 {
                 debug!("mismatch in write");
             }
         }
+        Ok(())
 
     }
     pub fn write_phys_8_atomic(&mut self, addr: u64, val: u8, order: Ordering) {

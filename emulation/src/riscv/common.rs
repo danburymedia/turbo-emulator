@@ -53,6 +53,14 @@ pub struct Trap {
     pub ttype: Exception,
     pub val: u64
 }
+#[derive(Debug,Copy, Clone,Eq, PartialEq)]
+pub enum RiscvMemError {
+    /// failed for some reason at this addr (we don't necessarily know why)
+    GenError(u64),
+    /// error while page walking
+    PageError(u64),
+
+}
 pub const RISCV_PAGE_SIZE: usize = 4096;
 #[repr(u64)]
 #[derive(Debug,Copy, Clone,Eq, PartialEq)]

@@ -533,18 +533,20 @@ impl RiscvInt {
                 }
 
             }
-            SIGNAL_AVAIL.with(|z| {
-                let mut zz = z.borrow_mut();
-                if *zz == true {
-                    // signal
-                    SINFO.with(|a| {
-                        let mut aa = a.borrow_mut();
-                        let signum = aa.use_idx.unwrap();
-                        setup_rt_frame(self, signum as i32, &mut aa);
-                    });
-                    *zz = false; // we will unblock signals later
-                }
-            });
+            if self.usermode {
+                SIGNAL_AVAIL.with(|z| {
+                    let mut zz = z.borrow_mut();
+                    if *zz == true {
+                        // signal
+                        SINFO.with(|a| {
+                            let mut aa = a.borrow_mut();
+                            let signum = aa.use_idx.unwrap();
+                            setup_rt_frame(self, signum as i32, &mut aa);
+                        });
+                        *zz = false; // we will unblock signals later
+                    }
+                });
+            }
             if let Some(f) = self.want_pc {
                 // todo: any checks?
                 self.pc = f;
@@ -557,7 +559,7 @@ impl RiscvInt {
         }
 
     }
-    fn exec_one_by_one(&mut self) -> Result<(), Trap> {
+    pub(crate) fn exec_one_by_one(&mut self) -> Result<(), Trap> {
         loop {
             // 0x7effc001397e
             let instr = self.read32(self.pc, true, true)?;

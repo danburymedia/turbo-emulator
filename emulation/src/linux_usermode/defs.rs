@@ -8,41 +8,41 @@ use crate::common::memory::{flat_mem, MemEndian};
 
 pub fn read64_advance_ptr(addr: &mut u64, end: MemEndian) -> u64 {
     let mut flatmem = flat_mem::new_usermode();
-    let ret = flatmem.read_phys_64(*addr, end);
+    let ret = flatmem.read_phys_64(*addr, end).unwrap();
     *addr += 8;
     ret
 }
 pub fn read32_advance_ptr(addr: &mut u64, end: MemEndian) -> u32 {
     let mut flatmem = flat_mem::new_usermode();
-    let ret = flatmem.read_phys_32(*addr, end);
+    let ret = flatmem.read_phys_32(*addr, end).unwrap();
     *addr += 4;
     ret
 }
 pub fn read16_advance_ptr(addr: &mut u64, end: MemEndian) -> u16 {
     let mut flatmem = flat_mem::new_usermode();
-    let ret = flatmem.read_phys_16(*addr, end);
+    let ret = flatmem.read_phys_16(*addr, end).unwrap();
     *addr += 2;
     ret
 }
 pub fn read8_advance_ptr(addr: &mut u64) -> u8 {
     let mut flatmem = flat_mem::new_usermode();
-    let ret = flatmem.read_phys_8(*addr);
+    let ret = flatmem.read_phys_8(*addr).unwrap();
     *addr += 1;
     ret
 }
 pub fn write16_advance_ptr(addr: &mut u64, val: u16, end: MemEndian) {
     let mut flatmem = flat_mem::new_usermode();
-    flatmem.write_phys_16(*addr, val, end);
+    flatmem.write_phys_16(*addr, val, end).unwrap();
     *addr += 2;
 }
 pub fn write64_advance_ptr(addr: &mut u64, val: u64, end: MemEndian) {
     let mut flatmem = flat_mem::new_usermode();
-    flatmem.write_phys_64(*addr, val, end);
+    flatmem.write_phys_64(*addr, val, end).unwrap();
     *addr += 8;
 }
 pub fn write32_advance_ptr(addr: &mut u64, val: u32, end: MemEndian) {
     let mut flatmem = flat_mem::new_usermode();
-    flatmem.write_phys_32(*addr, val, end);
+    flatmem.write_phys_32(*addr, val, end).unwrap();
     *addr += 4;
 }
 #[derive(Copy, Clone)]
