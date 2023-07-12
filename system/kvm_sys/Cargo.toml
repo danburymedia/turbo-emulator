@@ -5,6 +5,6 @@ authors = ["The ChromiumOS Authors"]
 edition = "2021"
 
 [dependencies]
-data_model = { path = "../../misc/data_model" }
+data_model = { path = "../../third-party/data_model" }
 libc = "*"
 base = { path = "../base" }

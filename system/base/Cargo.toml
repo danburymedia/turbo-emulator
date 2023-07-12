@@ -8,10 +8,10 @@ edition = "2021"
 chromeos = []
 
 [dependencies]
-audio_streams = { path = "../../misc/audio_streams" } # provided by ebuild
+audio_streams = { path = "../../third-party/audio_streams" } # provided by ebuild
 base_event_token_derive = { path = "base_event_token_derive", version = "*" }
-data_model = { path = "../../misc/data_model" } # provided by ebuild
-sync = { path = "../../misc/sync" } # provided by ebuild
+data_model = { path = "../../third-party/data_model" } # provided by ebuild
+sync = { path = "../../third-party/sync" } # provided by ebuild
 
 cfg-if = "*"
 chrono = "*"

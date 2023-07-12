@@ -3,7 +3,7 @@
 Turbo Emulator is a processor emulator written in the Rust programming language. It currently supports user-mode emulation of RISC-V and AArch64 Linux programs.
 
 ## Building
-Simply use "cargo build --release".
+Simply use "cargo build --release --features linux-usermode".
 
 ## Running
 

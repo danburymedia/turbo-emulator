@@ -5,9 +5,9 @@ authors = ["The ChromiumOS Authors"]
 edition = "2021"
 
 [dependencies]
-data_model = { path = "../../misc/data_model" }
+data_model = { path = "../../third-party/data_model" }
 kvm_sys = { path = "../kvm_sys" }
 libc = "*"
 base = { path = "../base" }
-sync = { path = "../../misc/sync" }
+sync = { path = "../../third-party/sync" }
 vm_memory = { path = "../../vm_memory" }

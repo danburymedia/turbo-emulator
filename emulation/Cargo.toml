@@ -8,8 +8,8 @@ edition = "2021"
 [dependencies]
 jit = {path = "../jit"}
 base = {path = "../system/base"}
-sync = {path = "../misc/sync"}
-resources = {path = "../misc/resources"}
+sync = {path = "../third-party/sync"}
+resources = {path = "../third-party/resources"}
 packed_struct = "0.10.0"
 vm_memory = {path = "../vm_memory"}
 simple-soft-float = "0.1.0"
@@ -19,7 +19,7 @@ anyhow = "*"
 multimap = "0.8.3"
 thiserror = "1.0.20"
 num = "0.4.0"
-kernel_loader = {path = "../misc/kernel_loader"}
+kernel_loader = {path = "../third-party/kernel_loader"}
 setjmp = "0.1.4"
 lazy_static = "1.4.0"
 cfg-if = "1.0.0"
