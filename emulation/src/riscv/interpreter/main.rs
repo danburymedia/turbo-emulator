@@ -559,35 +559,37 @@ impl RiscvInt {
         }
 
     }
+    // todo: replace errors in exec/step with custom error enum
+    #[inline]
+    pub(crate) fn step_one_instr(&mut self) {
+        let instr = self.read32(self.pc, true, true).unwrap(); // todo: for now
+        if (instr & 0x3) != 0x3 {
+            self.is_compressed = true;
+            // compressed
+            if !crate::riscv::decoder16::decode(self, instr as u16) {
+                self.illegal_instr();
+            }
+            self.pc += 2;
+        } else {
+            self.is_compressed = false;
+
+            if !crate::riscv::decoder::decode(self, instr) {
+                self.illegal_instr(); // this will set stop_exec = true
+            }
+            self.pc += 4;
+        }
+        self.regs[0] = 0;
+
+    }
     pub(crate) fn exec_one_by_one(&mut self) -> Result<(), Trap> {
         loop {
-            // 0x7effc001397e
-            let instr = self.read32(self.pc, true, true)?;
-            if (instr & 0x3) != 0x3 {
-                self.is_compressed = true;
-                // compressed
-                if !crate::riscv::decoder16::decode(self, instr as u16) {
-                    self.illegal_instr();
-                }
-                self.pc += 2;
-            } else {
-                self.is_compressed = false;
-
-                if !crate::riscv::decoder::decode(self, instr) {
-                    self.illegal_instr(); // this will set stop_exec = true
-                }
-                self.pc += 4;
-            }
-            self.regs[0] = 0;
-
+            self.step_one_instr();
             if self.stop_exec {
                 return Ok(());
                 // could be a trap for instr, request to jump, etc... We return err on
                 // fetch error only
             }
             // todo/: "bias" optimization: don't even go through pagewalker, have hard addr
-
-
         }
     }
 }

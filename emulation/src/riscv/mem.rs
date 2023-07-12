@@ -60,7 +60,10 @@ pub struct RiscVMem {
     pbmt_supported: bool,
     ppn: u64,
     usermode: bool, // in usermode, paging doesnt matter
-    tlb: HashMap<u64, u64>
+    tlb: HashMap<u64, u64>,
+    pub read_watchpoints: Vec<u64>,
+    pub write_watchpoints: Vec<u64>,
+
 }
 // reads will be return in native form, writes are expected in native form
 impl RiscVMem {
@@ -73,7 +76,9 @@ impl RiscVMem {
             ppn: 0,
             mstatus: 0,
             usermode: true,
-            tlb: Default::default()
+            tlb: Default::default(),
+            read_watchpoints: Vec::new(),
+            write_watchpoints: Vec::new(),
         }
     }
 
@@ -86,7 +91,9 @@ impl RiscVMem {
             ppn: 0,
             mstatus: 0,
             usermode: false,
-            tlb: Default::default()
+            tlb: Default::default(),
+            read_watchpoints: Vec::new(),
+            write_watchpoints: Vec::new()
         }
     }
     pub fn clear_cache(&mut self) {
@@ -460,7 +467,7 @@ impl RiscvInt {
             Err(z) => {
                 let trp = match z {
                     GenError(afaddr) => {
-                        panic!(); // for now
+                        // panic!(); // for now
                         self.mem_trap_access(acctype, afaddr)
                     }
                     PageError(pfaddr) => {

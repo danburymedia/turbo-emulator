@@ -7,6 +7,10 @@ use crate::riscv::interpreter::main::RiscvInt;
 use kernel_loader::*;
 use crate::common::memory::MemEndian;
 use std::result::Result;
+use crate::debug::DebugExecMode;
+use crate::riscv::debug::int32::Riscv32DebugWrapper;
+use crate::riscv::debug::int64::Riscv64DebugWrapper;
+
 impl RiscvInt {
     fn run_test(&mut self, to_host: u64) -> Result<u32, u32> {
         loop {
@@ -137,6 +141,27 @@ fn init_test(fs: &'static str) -> u32 {
     };
     let mut rcpu = RiscvInt::init_systemmode(if is64bit {Xlen::X64} else {Xlen::X32}, vmmem.clone());
     rcpu.pc = ef.entry;
+    /*
+    if !is64bit {
+        let mut debugr: Riscv32DebugWrapper = Riscv32DebugWrapper {
+            icpu: rcpu,
+            breakpoints: vec![],
+            exec_mode: DebugExecMode::Continue,
+        };
+        debugr.run_debug();
+        return 0;
+    }
+    if is64bit {
+        let mut debugr: Riscv64DebugWrapper = Riscv64DebugWrapper {
+            icpu: rcpu,
+            breakpoints: vec![],
+            exec_mode: DebugExecMode::Continue,
+        };
+        debugr.run_debug();
+        return 0;
+    }
+
+     */
    // let res = match rcpu.run_test(to_host.unwrap()) {
     let res = match RiscvInt::run_test(&mut rcpu, to_host.unwrap()) {
         Ok(z) => {

@@ -23,3 +23,8 @@ kernel_loader = {path = "../misc/kernel_loader"}
 setjmp = "0.1.4"
 lazy_static = "1.4.0"
 rustc-hash = { version="1.1" }
+gdbstub = { version="0.6.6", optional = true, git = "https://github.com/daniel5151/gdbstub.git" }
+gdbstub_arch = { version = "0.2.4", optional = true, git = "https://github.com/daniel5151/gdbstub.git" }
+[features]
+default = ["gdb"]
+gdb = ["gdbstub", "gdbstub_arch"]
