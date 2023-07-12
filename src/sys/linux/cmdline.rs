@@ -17,12 +17,18 @@ pub struct RunUserCommand {
     /// arguments for the executable file
     pub args: Vec<String>,
 }
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "nothing")]
+/// Nothing command (placeholder just so arg handler will be happy)
+pub struct NothingCommand {
+
+}
 
 #[derive(FromArgs)]
 #[argh(subcommand)]
 /// Unix Commands
 pub enum Commands {
-    #[cfg(target_os = "linux")]
-    RunUser(RunUserCommand)
-
+    #[cfg(feature = "linux-usermode")]
+    RunUser(RunUserCommand),
+    Nothing(NothingCommand),
 }

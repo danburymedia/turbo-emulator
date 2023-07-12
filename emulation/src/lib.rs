@@ -1,8 +1,9 @@
 mod common;
 mod riscv;
-pub mod elf;
 pub mod armv8;
-#[cfg(target_os = "linux")]
+#[cfg(feature = "linux-usermode")]
+pub mod elf;
+#[cfg(feature = "linux-usermode")]
 mod linux_usermode;
 pub(crate) mod debug;
 

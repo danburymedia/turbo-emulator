@@ -23,3 +23,7 @@ downcast-rs = "1.2.0"
 terminal_size = "0.1.17"
 libc = "*"
 uuid = { version = "0.8.2", features = ["v4", "serde"]}
+
+[features]
+default = []
+linux-usermode = ["emulation/linux-usermode"]

@@ -1,8 +1,11 @@
-use crate::linux_usermode::signals::{SIGNAL_AVAIL, SINFO};
-use crate::riscv::common::Exception::EnvironmentCallFromMMode;
 use crate::riscv::interpreter::main::RiscvInt;
-use crate::riscv::ume::signals::setup_rt_frame;
-
+cfg_if::cfg_if! {
+    if #[cfg(feature = "linux-usermode")] {
+        use crate::riscv::ume::signals::setup_rt_frame;
+        use crate::linux_usermode::signals::{SIGNAL_AVAIL, SINFO};
+        use crate::riscv::common::Exception::EnvironmentCallFromMMode;
+    }
+}
 impl RiscvInt {
     pub fn debug_step(&mut self, bpoints: Vec<u64>) {
         loop {
@@ -13,14 +16,21 @@ impl RiscvInt {
         }
         if self.trap.is_some() {
             if self.usermode {
-                let trp = self.trap.unwrap();
-                if trp.ttype == EnvironmentCallFromMMode {
-                    self.handle_syscall();
-                    self.stop_exec = false;
-                    self.trap = None;
+                #[cfg(feature = "linux-usermode")]
+                {
+                    let trp = self.trap.unwrap();
+                    if trp.ttype == EnvironmentCallFromMMode {
+                        self.handle_syscall();
+                        self.stop_exec = false;
+                        self.trap = None;
 
-                } else {
-                    panic!("Protection error  - Suffered RISCV trap in user mode: {:?}", self.trap.unwrap())
+                    } else {
+                        panic!("Protection error  - Suffered RISCV trap in user mode: {:?}", self.trap.unwrap())
+                    }
+                }
+                #[cfg(not(feature = "linux-usermode"))]
+                {
+                    unreachable!("usermode functionality not included but CPU has usermode variable set")
                 }
             } else {
                 self.handle_trap(self.trap.unwrap(), self.trap_pc);
@@ -33,20 +43,23 @@ impl RiscvInt {
             }
 
         }
-        // todo featuregate all usernmode stuff
-        if self.usermode {
-            SIGNAL_AVAIL.with(|z| {
-                let mut zz = z.borrow_mut();
-                if *zz == true {
-                    // signal
-                    SINFO.with(|a| {
-                        let mut aa = a.borrow_mut();
-                        let signum = aa.use_idx.unwrap();
-                        setup_rt_frame(self, signum as i32, &mut aa);
-                    });
-                    *zz = false; // we will unblock signals later
-                }
-            });
+        #[cfg(feature = "linux-usermode")]
+        {
+            if self.usermode {
+                SIGNAL_AVAIL.with(|z| {
+                    let mut zz = z.borrow_mut();
+                    if *zz == true {
+                        // signal
+                        SINFO.with(|a| {
+                            let mut aa = a.borrow_mut();
+                            let signum = aa.use_idx.unwrap();
+                            setup_rt_frame(self, signum as i32, &mut aa);
+                        });
+                        *zz = false; // we will unblock signals later
+                    }
+                });
+            }
+
         }
         if let Some(f) = self.want_pc {
             // todo: any checks?

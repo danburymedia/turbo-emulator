@@ -516,6 +516,7 @@ impl RiscvInt {
     }
     pub fn read64(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u64, Trap> {
         // todo- check mmio, etc
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             return Ok(self.memsource.guest_mem.read_phys_64(addr, MemEndian::Little).unwrap());
         }
@@ -526,6 +527,7 @@ impl RiscvInt {
     }
 
     pub fn read32(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u32, Trap> {
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             return Ok(self.memsource.guest_mem.read_phys_32(addr, MemEndian::Little).unwrap());
         }
@@ -535,6 +537,7 @@ impl RiscvInt {
     }
 
     pub fn read16(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u16, Trap> {
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             return Ok(self.memsource.guest_mem.read_phys_16(addr, MemEndian::Little).unwrap());
         }
@@ -544,6 +547,7 @@ impl RiscvInt {
     }
 
     pub fn read8(&mut self, addr: u64, is_exec: bool, set_trap: bool) -> Result<u8, Trap> {
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             return Ok(self.memsource.guest_mem.read_phys_8(addr).unwrap());
         }
@@ -578,6 +582,7 @@ impl RiscvInt {
         if self.cache_enabled {
             self.deal_with_cache(addr);
         }
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             self.memsource.guest_mem.write_phys_32(addr, val, MemEndian::Little);
             return Ok(());
@@ -590,6 +595,7 @@ impl RiscvInt {
         if self.cache_enabled {
             self.deal_with_cache(addr);
         }
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             self.memsource.guest_mem.write_phys_16(addr, val, MemEndian::Little);
             return Ok(());
@@ -603,6 +609,7 @@ impl RiscvInt {
         if self.cache_enabled {
             self.deal_with_cache(addr);
         }
+        #[cfg(feature = "linux-usermode")]
         if self.usermode {
             self.memsource.guest_mem.write_phys_8(addr, val);
             return Ok(());

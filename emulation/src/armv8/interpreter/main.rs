@@ -6,13 +6,17 @@ use crate::armv8::interpreter::floating::fpcr_2_fpsr;
 use crate::armv8::interpreter::mem::{MemAccessStr, MemData};
 use crate::common::arm_fp_defs::{FPSR, Flags};
 use crate::armv8::interpreter::vect_helper::VectorReg;
-use crate::armv8::ume::defs::{arm64_translate_syscall, write_arm64_stat};
 use crate::common::memory::{flat_mem, MemEndian};
-use crate::elf::UserModeRuntime;
-use crate::linux_usermode::defs::{GenericStat, write_sysinfo_generic64};
-use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
-use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask};
+cfg_if::cfg_if! {
+    if #[cfg(feature = "linux-usermode")] {
+        use crate::elf::UserModeRuntime;
+        use crate::linux_usermode::defs::{GenericStat, write_sysinfo_generic64};
+        use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
+        use crate::linux_usermode::signals::{GenericSigactionArg, GenericStackt, SigEntry, SigInfo, Sigmask};
+        use crate::armv8::ume::defs::{arm64_translate_syscall, write_arm64_stat};
 
+    }
+}
 pub struct Arm64Cpu {
     reg: [u64; 32],
     pub tpidr: [u64; 4],
@@ -24,6 +28,7 @@ pub struct Arm64Cpu {
     pub want_pc: Option<u64>,
     pub memory_access: flat_mem,
     pub is_usermode: bool,
+    #[cfg(feature = "linux-usermode")]
     pub user_struct: UserModeRuntime,
     pub want_syscall: bool,
     pub fpcr: u32,
@@ -41,6 +46,7 @@ impl Arm64Cpu {
         // true if available, false if not
         false
     }
+    #[cfg(feature = "linux-usermode")]
     pub fn handle_syscall(&mut self) {
         let syscallnum = self.get_reg(8, false) as u32;
         let systype = if let Some(s) = arm64_translate_syscall(syscallnum) {
@@ -138,6 +144,7 @@ impl Arm64Cpu {
         }
 
     }
+    #[cfg(feature = "linux-usermode")]
     pub fn init_usermode(ume: UserModeRuntime) -> Arm64Cpu {
         Arm64Cpu {
             reg: [0; 32],
@@ -179,6 +186,7 @@ impl Arm64Cpu {
                     self.pc = f;
                     self.want_pc = None;
                 }
+                #[cfg(feature = "linux-usermode")]
                 if self.want_syscall {
                     self.handle_syscall();
                     self.want_syscall = false;
@@ -208,6 +216,7 @@ impl Arm64Cpu {
 fn nofunc() {
 
 }
+#[cfg(feature = "linux-usermode")]
 impl UsermodeCpu for Arm64Cpu {
     fn push_stack_natural(&mut self, val: u64) {
         todo!()

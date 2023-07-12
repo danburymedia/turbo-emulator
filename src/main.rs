@@ -4,6 +4,7 @@ pub mod cmdline;
 use anyhow::Result;
 use base::syslog::{Log, LogConfig, Metadata};
 use argh::FromArgs;
+#[cfg(feature = "linux-usermode")]
 use emulation::elf::init_user_mode_emulation;
 use log::{info, Record};
 use crate::config::*;
@@ -22,12 +23,17 @@ pub enum CommandStatus {
 }
 fn linux_sys_cmd(c: crate::sys::platform::cmdline::Commands, usermode: Option<String>) -> Result<CommandStatus> {
     match c {
+        #[cfg(feature = "linux-usermode")]
         Commands::RunUser(userm) => {
             init_user_mode_emulation(userm.exec_path, userm.args,
                                      usermode.unwrap_or(String::from(""))).unwrap();
             // probably will not return after this
 
         }
+        Commands::Nothing(_) => {
+            println!("This does nothing.");
+        }
+
     }
     Ok(CommandStatus::Success)
 }

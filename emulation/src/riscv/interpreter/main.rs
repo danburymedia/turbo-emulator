@@ -7,10 +7,6 @@ use sync::Mutex;
 use vm_memory::GuestMemory;
 use rustc_hash::FxHashMap;
 use crate::common::memory::{flat_mem, MemEndian};
-use crate::elf::UserModeRuntime;
-use crate::linux_usermode::defs::{GenericStat, read32_advance_ptr, read64_advance_ptr};
-use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
-use crate::linux_usermode::signals::{block_all_signals, GenericSigactionArg, GenericStackt, get_generic_sigaction_64, SigEntry, SigInfo, Sigmask, SIGNAL_AVAIL, SINFO};
 use crate::riscv::common::{Exception, get_privilege_encoding, get_trap_cause, Priv, RISCV_STACKPOINTER_REG, RiscvArgs, Trap, Xlen, xlen2bits, xlen2misa};
 use crate::riscv::common::Exception::{EnvironmentCallFromMMode, EnvironmentCallFromUMode};
 use crate::riscv::decoder;
@@ -19,10 +15,19 @@ use crate::riscv::mem::{get_read_access_type, MemAccessCircumstances, MemAccessT
 //use crate::riscv::vector::vect_state;
 use crate::riscv::interpreter::core::illegal_instr;
 use crate::riscv::interpreter::defs::or;
-use crate::riscv::ume::defs::{riscv_translate_syscall, write_riscv_stat, write_riscv_sysinfo};
-use crate::riscv::ume::signals::setup_rt_frame;
 // use crate::riscv::vector::VectState;
 
+cfg_if::cfg_if! {
+    if #[cfg(feature = "linux-usermode")] {
+        use crate::elf::UserModeRuntime;
+        use crate::linux_usermode::defs::{GenericStat, read32_advance_ptr, read64_advance_ptr};
+        use crate::linux_usermode::main::{dispatch, SyscallIn, SyscallOut, UsermodeCpu};
+        use crate::linux_usermode::signals::{block_all_signals, GenericSigactionArg, GenericStackt,
+            get_generic_sigaction_64, SigEntry, SigInfo, Sigmask, SIGNAL_AVAIL, SINFO};
+        use crate::riscv::ume::defs::{riscv_translate_syscall, write_riscv_stat, write_riscv_sysinfo};
+        use crate::riscv::ume::signals::setup_rt_frame;
+    }
+}
 #[derive(Clone)]
 pub struct RiscvInstr {
     pub inc_by: u64, // compressed = 2, normal = 4
@@ -60,6 +65,7 @@ pub struct RiscvInt {
    // pub instr: UnsafeCell<FxHashMap<u64, Vec<RiscvBlock>>>,
     pub trap: Option<Trap>,
     pub current_block: RiscvBlock,
+    #[cfg(feature = "linux-usermode")]
     pub user_struct: UserModeRuntime,
     pub is_compressed: bool,
     // pub vector_state: VectState,
@@ -100,6 +106,7 @@ impl RiscvInt {
             stop_exec: false,
             cache_enabled: false,
             wfi: false,
+            #[cfg(feature = "linux-usermode")]
             user_struct: UserModeRuntime::default(),
             usermode: false,
             is_reservation: false,
@@ -108,6 +115,7 @@ impl RiscvInt {
             res_len: 0
         }
     }
+    #[cfg(feature = "linux-usermode")]
     pub fn init_usermode(xlen: Xlen, ume: UserModeRuntime) -> RiscvInt {
         RiscvInt {
             regs: [0; 32],
@@ -467,6 +475,7 @@ impl RiscvInt {
         }
         return;
     }
+    #[cfg(feature = "linux-usermode")]
     pub fn handle_syscall(&mut self) {
         let syscallnum = self.regs[17]; // a7
         let systype = if let Some(s) = riscv_translate_syscall(syscallnum as u16) {
@@ -513,15 +522,23 @@ impl RiscvInt {
             }
             if self.trap.is_some() {
                 if self.usermode {
-                    let trp = self.trap.unwrap();
-                    if trp.ttype == EnvironmentCallFromMMode {
-                        self.handle_syscall();
-                        self.stop_exec = false;
-                        self.trap = None;
+                    #[cfg(feature = "linux-usermode")]
+                    {
+                        let trp = self.trap.unwrap();
+                        if trp.ttype == EnvironmentCallFromMMode {
+                            self.handle_syscall();
+                            self.stop_exec = false;
+                            self.trap = None;
 
-                    } else {
-                        panic!("Protection error  - Suffered RISCV trap in user mode: {:?}", self.trap.unwrap())
+                        } else {
+                            panic!("Protection error  - Suffered RISCV trap in user mode: {:?}", self.trap.unwrap())
+                        }
                     }
+                    #[cfg(not(feature = "linux-usermode"))]
+                    {
+                        unreachable!("usermode functionality not included but CPU has usermode variable set")
+                    }
+
                 } else {
                     self.handle_trap(self.trap.unwrap(), self.trap_pc);
                     self.trap_pc = 0;
@@ -533,19 +550,23 @@ impl RiscvInt {
                 }
 
             }
-            if self.usermode {
-                SIGNAL_AVAIL.with(|z| {
-                    let mut zz = z.borrow_mut();
-                    if *zz == true {
-                        // signal
-                        SINFO.with(|a| {
-                            let mut aa = a.borrow_mut();
-                            let signum = aa.use_idx.unwrap();
-                            setup_rt_frame(self, signum as i32, &mut aa);
-                        });
-                        *zz = false; // we will unblock signals later
-                    }
-                });
+            #[cfg(feature = "linux-usermode")]
+            {
+                if self.usermode {
+                    SIGNAL_AVAIL.with(|z| {
+                        let mut zz = z.borrow_mut();
+                        if *zz == true {
+                            // signal
+                            SINFO.with(|a| {
+                                let mut aa = a.borrow_mut();
+                                let signum = aa.use_idx.unwrap();
+                                setup_rt_frame(self, signum as i32, &mut aa);
+                            });
+                            *zz = false; // we will unblock signals later
+                        }
+                    });
+                }
+
             }
             if let Some(f) = self.want_pc {
                 // todo: any checks?
